@@ -5,7 +5,6 @@ import {
   Truck, 
   AlertTriangle, 
   Users, 
-  CheckCircle2, 
   Clock, 
   ArrowRight,
   TrendingUp,
