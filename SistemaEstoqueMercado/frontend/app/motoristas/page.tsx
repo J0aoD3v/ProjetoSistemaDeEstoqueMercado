@@ -1,77 +1,85 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Motorista } from '@/types';
 import { motoristaService } from '@/services/motoristaService';
-import { Plus, Trash2, User, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, User, AlertCircle, X, Pencil } from 'lucide-react';
 import axios from 'axios';
 import { formatCPF } from '@/utils/masks';
+import { validarCPF, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function MotoristasPage() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [cpf, setCpf] = useState('');
   const [nome, setNome] = useState('');
   const [cnh, setCnh] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  const buscarMotoristas = async () => {
+  const [erroCpf, setErroCpf] = useState('');
+  const [erroNome, setErroNome] = useState('');
+  const [erroCnh, setErroCnh] = useState('');
+
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [editCpf, setEditCpf] = useState('');
+  const [editNome, setEditNome] = useState('');
+  const [editCnh, setEditCnh] = useState('');
+  const [editErroCpf, setEditErroCpf] = useState('');
+  const [editErroNome, setEditErroNome] = useState('');
+  const [editErroCnh, setEditErroCnh] = useState('');
+
+  const carregarMotoristas = useCallback(async () => {
     try {
+      setCarregando(true);
       const data = await motoristaService.listarTodos();
       setMotoristas(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de motoristas.');
+      setErroGeral('Não foi possível carregar a lista de motoristas.');
     } finally {
       setCarregando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const carregarInicial = async () => {
-      try {
-        const data = await motoristaService.listarTodos();
-        if (isMounted) {
-          setMotoristas(data);
-          setErro('');
-        }
-      } catch {
-        if (isMounted) {
-          setErro('Não foi possível carregar a lista de motoristas.');
-        }
-      } finally {
-        if (isMounted) {
-          setCarregando(false);
-        }
-      }
-    };
-
-    carregarInicial();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void (async () => {
+      await carregarMotoristas();
+    })();
+  }, [carregarMotoristas]);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    const msgCpf = validarCPF(cpf);
+    const msgNome = validarCampoObrigatorio(nome, 'Nome');
+    const msgCnh = validarCampoObrigatorio(cnh, 'CNH');
+
+    setErroCpf(msgCpf || '');
+    setErroNome(msgNome || '');
+    setErroCnh(msgCnh || '');
+
+    if (msgCpf || msgNome || msgCnh) return;
+
     try {
       await motoristaService.cadastrar({ cpf, nome, cnh });
       setCpf('');
       setNome('');
       setCnh('');
       setMostrarForm(false);
-      setCarregando(true);
-      await buscarMotoristas();
+      setErroCpf('');
+      setErroNome('');
+      setErroCnh('');
+      await carregarMotoristas();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('cpf')) setErroCpf(msg);
+        else if (msg.toLowerCase().includes('nome')) setErroNome(msg);
+        else if (msg.toLowerCase().includes('cnh')) setErroCnh(msg);
+        else setErroGeral(msg);
       } else {
-        alert('Erro ao cadastrar motorista.');
+        setErroGeral('Erro ao cadastrar motorista.');
       }
     }
   };
@@ -80,11 +88,73 @@ export default function MotoristasPage() {
     if (!id || !confirm('Deseja excluir este motorista?')) return;
     try {
       await motoristaService.excluir(id);
-      setCarregando(true);
-      await buscarMotoristas();
+      await carregarMotoristas();
     } catch {
-      alert('Erro ao excluir motorista.');
+      setErroGeral('Erro ao excluir motorista.');
     }
+  };
+
+  const iniciarEdicao = (m: Motorista) => {
+    setEditandoId(m.idMotorista ?? null);
+    setEditCpf(m.cpf);
+    setEditNome(m.nome);
+    setEditCnh(m.cnh);
+    setEditErroCpf('');
+    setEditErroNome('');
+    setEditErroCnh('');
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditCpf('');
+    setEditNome('');
+    setEditCnh('');
+    setEditErroCpf('');
+    setEditErroNome('');
+    setEditErroCnh('');
+  };
+
+  const salvarEdicao = async (id: number) => {
+    const msgCpf = validarCPF(editCpf);
+    const msgNome = validarCampoObrigatorio(editNome, 'Nome');
+    const msgCnh = validarCampoObrigatorio(editCnh, 'CNH');
+
+    setEditErroCpf(msgCpf || '');
+    setEditErroNome(msgNome || '');
+    setEditErroCnh(msgCnh || '');
+
+    if (msgCpf || msgNome || msgCnh) return;
+
+    try {
+      await motoristaService.atualizar(id, { cpf: editCpf, nome: editNome, cnh: editCnh });
+      cancelarEdicao();
+      await carregarMotoristas();
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('cpf')) setEditErroCpf(msg);
+        else if (msg.toLowerCase().includes('nome')) setEditErroNome(msg);
+        else if (msg.toLowerCase().includes('cnh')) setEditErroCnh(msg);
+        else setErroGeral(msg);
+      } else {
+        setErroGeral('Erro ao atualizar motorista.');
+      }
+    }
+  };
+
+  const handleBlurCpf = (valor: string, setErro: (msg: string) => void) => {
+    const msg = validarCPF(valor);
+    setErro(msg || '');
+  };
+
+  const handleBlurNome = (valor: string, setErro: (msg: string) => void) => {
+    const msg = validarCampoObrigatorio(valor, 'Nome');
+    setErro(msg || '');
+  };
+
+  const handleBlurCnh = (valor: string, setErro: (msg: string) => void) => {
+    const msg = validarCampoObrigatorio(valor, 'CNH');
+    setErro(msg || '');
   };
 
   return (
@@ -95,7 +165,7 @@ export default function MotoristasPage() {
           <p className="mt-1 text-base text-muted">Gestão dos motoristas cadastrados</p>
         </div>
         <button
-          onClick={() => setMostrarForm(!mostrarForm)}
+          onClick={() => { setMostrarForm(!mostrarForm); setErroCpf(''); setErroNome(''); setErroCnh(''); }}
           className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-accent-hover"
         >
           <Plus className="w-4 h-4" />
@@ -103,10 +173,10 @@ export default function MotoristasPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -120,11 +190,13 @@ export default function MotoristasPage() {
                 type="text"
                 required
                 value={formatCPF(cpf)}
-                onChange={(e) => setCpf(formatCPF(e.target.value))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
+                onChange={(e) => { setCpf(formatCPF(e.target.value)); setErroCpf(''); }}
+                onBlur={() => handleBlurCpf(cpf, setErroCpf)}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroCpf ? 'border-danger focus:ring-danger' : 'border-border focus:ring-accent'}`}
                 placeholder="000.000.000-00"
                 maxLength={14}
               />
+              {erroCpf && <p className="text-xs text-danger mt-1">{erroCpf}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Nome</label>
@@ -132,10 +204,12 @@ export default function MotoristasPage() {
                 type="text"
                 required
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
+                onChange={(e) => { setNome(e.target.value); setErroNome(''); }}
+                onBlur={() => handleBlurNome(nome, setErroNome)}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroNome ? 'border-danger focus:ring-danger' : 'border-border focus:ring-accent'}`}
                 placeholder="João da Silva"
               />
+              {erroNome && <p className="text-xs text-danger mt-1">{erroNome}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">CNH</label>
@@ -143,10 +217,12 @@ export default function MotoristasPage() {
                 type="text"
                 required
                 value={cnh}
-                onChange={(e) => setCnh(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
+                onChange={(e) => { setCnh(e.target.value); setErroCnh(''); }}
+                onBlur={() => handleBlurCnh(cnh, setErroCnh)}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroCnh ? 'border-danger focus:ring-danger' : 'border-border focus:ring-accent'}`}
                 placeholder="12345678901"
               />
+              {erroCnh && <p className="text-xs text-danger mt-1">{erroCnh}</p>}
             </div>
           </div>
           <div className="flex justify-end pt-2">
@@ -179,15 +255,64 @@ export default function MotoristasPage() {
             <tbody className="divide-y divide-border">
               {motoristas.map((m) => (
                 <tr key={m.idMotorista} className="transition-colors hover:bg-surface-hover">
-                  <td className="p-4 font-mono text-muted">#{m.idMotorista}</td>
-                  <td className="p-4 font-mono text-foreground">{m.cpf}</td>
-                  <td className="p-4 text-foreground font-medium">{m.nome}</td>
-                  <td className="p-4 font-mono text-muted">{m.cnh}</td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => handleExcluir(m.idMotorista)} className="text-muted hover:text-danger p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  {editandoId === m.idMotorista ? (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{m.idMotorista}</td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={formatCPF(editCpf)}
+                          onChange={(e) => { setEditCpf(formatCPF(e.target.value)); setEditErroCpf(''); }}
+                          onBlur={() => handleBlurCpf(editCpf, setEditErroCpf)}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroCpf ? 'border-danger' : 'border-border'}`}
+                        />
+                        {editErroCpf && <p className="text-xs text-danger mt-1">{editErroCpf}</p>}
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editNome}
+                          onChange={(e) => { setEditNome(e.target.value); setEditErroNome(''); }}
+                          onBlur={() => handleBlurNome(editNome, setEditErroNome)}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroNome ? 'border-danger' : 'border-border'}`}
+                        />
+                        {editErroNome && <p className="text-xs text-danger mt-1">{editErroNome}</p>}
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editCnh}
+                          onChange={(e) => { setEditCnh(e.target.value); setEditErroCnh(''); }}
+                          onBlur={() => handleBlurCnh(editCnh, setEditErroCnh)}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroCnh ? 'border-danger' : 'border-border'}`}
+                        />
+                        {editErroCnh && <p className="text-xs text-danger mt-1">{editErroCnh}</p>}
+                      </td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => salvarEdicao(m.idMotorista!)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={cancelarEdicao} className="text-muted p-1">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{m.idMotorista}</td>
+                      <td className="p-4 font-mono text-foreground">{m.cpf}</td>
+                      <td className="p-4 text-foreground font-medium">{m.nome}</td>
+                      <td className="p-4 font-mono text-muted">{m.cnh}</td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => iniciarEdicao(m)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleExcluir(m.idMotorista)} className="text-muted hover:text-danger p-1">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -197,12 +322,3 @@ export default function MotoristasPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

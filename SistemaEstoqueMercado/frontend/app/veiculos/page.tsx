@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Veiculo } from '@/types';
 import { veiculoService } from '@/services/veiculoService';
 import { Plus, Trash2, Truck, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { formatPlate } from '@/utils/masks';
+import { validarPlaca, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function VeiculosPage() {
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [placa, setPlaca] = useState('');
   const [tipoVeiculo, setTipoVeiculo] = useState('');
@@ -18,48 +19,44 @@ export default function VeiculosPage() {
   const [transportadora, setTransportadora] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  const buscarVeiculos = async () => {
+  const [erroPlaca, setErroPlaca] = useState('');
+  const [erroTipoVeiculo, setErroTipoVeiculo] = useState('');
+  const [erroMarcaModelo, setErroMarcaModelo] = useState('');
+  const [erroTransportadora, setErroTransportadora] = useState('');
+
+  const carregarVeiculos = useCallback(async () => {
     try {
+      setCarregando(true);
       const data = await veiculoService.listarTodos();
       setVeiculos(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de veículos.');
+      setErroGeral('Não foi possível carregar a lista de veículos.');
     } finally {
       setCarregando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const carregarInicial = async () => {
-      try {
-        const data = await veiculoService.listarTodos();
-        if (isMounted) {
-          setVeiculos(data);
-          setErro('');
-        }
-      } catch {
-        if (isMounted) {
-          setErro('Não foi possível carregar a lista de veículos.');
-        }
-      } finally {
-        if (isMounted) {
-          setCarregando(false);
-        }
-      }
-    };
-
-    carregarInicial();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void (async () => {
+      await carregarVeiculos();
+    })();
+  }, [carregarVeiculos]);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    const msgPlaca = validarPlaca(placa);
+    const msgTipo = validarCampoObrigatorio(tipoVeiculo, 'Tipo de veículo');
+    const msgMarca = validarCampoObrigatorio(marcaModelo, 'Marca/Modelo');
+    const msgTransp = validarCampoObrigatorio(transportadora, 'Transportadora');
+
+    setErroPlaca(msgPlaca || '');
+    setErroTipoVeiculo(msgTipo || '');
+    setErroMarcaModelo(msgMarca || '');
+    setErroTransportadora(msgTransp || '');
+
+    if (msgPlaca || msgTipo || msgMarca || msgTransp) return;
+
     try {
       await veiculoService.cadastrar({ placa, tipoVeiculo, marcaModelo, transportadora });
       setPlaca('');
@@ -67,13 +64,21 @@ export default function VeiculosPage() {
       setMarcaModelo('');
       setTransportadora('');
       setMostrarForm(false);
-      setCarregando(true);
-      await buscarVeiculos();
+      setErroPlaca('');
+      setErroTipoVeiculo('');
+      setErroMarcaModelo('');
+      setErroTransportadora('');
+      await carregarVeiculos();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('placa')) setErroPlaca(msg);
+        else if (msg.toLowerCase().includes('tipo')) setErroTipoVeiculo(msg);
+        else if (msg.toLowerCase().includes('marca') || msg.toLowerCase().includes('modelo')) setErroMarcaModelo(msg);
+        else if (msg.toLowerCase().includes('transportadora')) setErroTransportadora(msg);
+        else setErroGeral(msg);
       } else {
-        alert('Erro ao cadastrar veículo.');
+        setErroGeral('Erro ao cadastrar veículo.');
       }
     }
   };
@@ -82,10 +87,9 @@ export default function VeiculosPage() {
     if (!id || !confirm('Deseja excluir este veículo?')) return;
     try {
       await veiculoService.excluir(id);
-      setCarregando(true);
-      await buscarVeiculos();
+      await carregarVeiculos();
     } catch {
-      alert('Erro ao excluir veículo.');
+      setErroGeral('Erro ao excluir veículo.');
     }
   };
 
@@ -97,7 +101,7 @@ export default function VeiculosPage() {
           <p className="mt-1 text-base text-muted">Gestão dos veículos cadastrados</p>
         </div>
         <button
-          onClick={() => setMostrarForm(!mostrarForm)}
+          onClick={() => { setMostrarForm(!mostrarForm); setErroPlaca(''); setErroTipoVeiculo(''); setErroMarcaModelo(''); setErroTransportadora(''); }}
           className="flex items-center justify-center gap-2 rounded-lg bg-warning px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-warning-hover"
         >
           <Plus className="w-4 h-4" />
@@ -105,10 +109,10 @@ export default function VeiculosPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -122,11 +126,13 @@ export default function VeiculosPage() {
                 type="text"
                 required
                 value={formatPlate(placa)}
-                onChange={(e) => setPlaca(formatPlate(e.target.value))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => { setPlaca(formatPlate(e.target.value)); setErroPlaca(''); }}
+                onBlur={() => setErroPlaca(validarPlaca(placa) || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroPlaca ? 'border-danger focus:ring-danger' : 'border-border focus:ring-warning'}`}
                 placeholder="ABC-1234"
                 maxLength={8}
               />
+              {erroPlaca && <p className="text-xs text-danger mt-1">{erroPlaca}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Tipo de Veículo</label>
@@ -134,10 +140,12 @@ export default function VeiculosPage() {
                 type="text"
                 required
                 value={tipoVeiculo}
-                onChange={(e) => setTipoVeiculo(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => { setTipoVeiculo(e.target.value); setErroTipoVeiculo(''); }}
+                onBlur={() => setErroTipoVeiculo(validarCampoObrigatorio(tipoVeiculo, 'Tipo de veículo') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroTipoVeiculo ? 'border-danger focus:ring-danger' : 'border-border focus:ring-warning'}`}
                 placeholder="Caminhão"
               />
+              {erroTipoVeiculo && <p className="text-xs text-danger mt-1">{erroTipoVeiculo}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Marca/Modelo</label>
@@ -145,10 +153,12 @@ export default function VeiculosPage() {
                 type="text"
                 required
                 value={marcaModelo}
-                onChange={(e) => setMarcaModelo(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => { setMarcaModelo(e.target.value); setErroMarcaModelo(''); }}
+                onBlur={() => setErroMarcaModelo(validarCampoObrigatorio(marcaModelo, 'Marca/Modelo') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroMarcaModelo ? 'border-danger focus:ring-danger' : 'border-border focus:ring-warning'}`}
                 placeholder="Volvo FH 540"
               />
+              {erroMarcaModelo && <p className="text-xs text-danger mt-1">{erroMarcaModelo}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Transportadora</label>
@@ -156,10 +166,12 @@ export default function VeiculosPage() {
                 type="text"
                 required
                 value={transportadora}
-                onChange={(e) => setTransportadora(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => { setTransportadora(e.target.value); setErroTransportadora(''); }}
+                onBlur={() => setErroTransportadora(validarCampoObrigatorio(transportadora, 'Transportadora') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroTransportadora ? 'border-danger focus:ring-danger' : 'border-border focus:ring-warning'}`}
                 placeholder="Transportes XYZ"
               />
+              {erroTransportadora && <p className="text-xs text-danger mt-1">{erroTransportadora}</p>}
             </div>
           </div>
           <div className="flex justify-end pt-2">
@@ -212,12 +224,3 @@ export default function VeiculosPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

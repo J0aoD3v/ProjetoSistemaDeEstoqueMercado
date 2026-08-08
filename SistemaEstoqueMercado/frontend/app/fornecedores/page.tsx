@@ -3,32 +3,39 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Fornecedor } from '@/types';
 import { fornecedorService } from '@/services/fornecedorService';
-import { Plus, Trash2, Edit, AlertCircle, X, Check } from 'lucide-react';
+import { Plus, Trash2, Pencil, AlertCircle, X } from 'lucide-react';
 import axios from 'axios';
 import { formatCNPJ } from '@/utils/masks';
+import { validarCNPJ, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function FornecedoresPage() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [cnpj, setCnpj] = useState('');
   const [razaoSocial, setRazaoSocial] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
-  const [editandoId, setEditandoId] = useState<number | null>(null);
 
+  const [erroCnpj, setErroCnpj] = useState('');
+  const [erroRazaoSocial, setErroRazaoSocial] = useState('');
+
+  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [editCnpj, setEditCnpj] = useState('');
   const [editRazaoSocial, setEditRazaoSocial] = useState('');
   const [editNomeFantasia, setEditNomeFantasia] = useState('');
+  const [editErroCnpj, setEditErroCnpj] = useState('');
+  const [editErroRazaoSocial, setEditErroRazaoSocial] = useState('');
 
   const carregarFornecedores = useCallback(async () => {
     try {
+      setCarregando(true);
       const data = await fornecedorService.listarTodos();
       setFornecedores(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de fornecedores.');
+      setErroGeral('Não foi possível carregar a lista de fornecedores.');
     } finally {
       setCarregando(false);
     }
@@ -42,18 +49,31 @@ export default function FornecedoresPage() {
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    const msgCnpj = validarCNPJ(cnpj);
+    const msgRazao = validarCampoObrigatorio(razaoSocial, 'Razão Social');
+
+    setErroCnpj(msgCnpj || '');
+    setErroRazaoSocial(msgRazao || '');
+
+    if (msgCnpj || msgRazao) return;
+
     try {
       await fornecedorService.cadastrar({ cnpj, razaoSocial, nomeFantasia });
       setCnpj('');
       setRazaoSocial('');
       setNomeFantasia('');
       setMostrarForm(false);
+      setErroCnpj('');
+      setErroRazaoSocial('');
       await carregarFornecedores();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('cnpj')) setErroCnpj(msg);
+        else if (msg.toLowerCase().includes('razão') || msg.toLowerCase().includes('razao')) setErroRazaoSocial(msg);
+        else setErroGeral(msg);
       } else {
-        alert('Erro ao cadastrar fornecedor.');
+        setErroGeral('Erro ao cadastrar fornecedor.');
       }
     }
   };
@@ -64,7 +84,7 @@ export default function FornecedoresPage() {
       await fornecedorService.excluir(id);
       await carregarFornecedores();
     } catch {
-      alert('Erro ao excluir fornecedor.');
+      setErroGeral('Erro ao excluir fornecedor.');
     }
   };
 
@@ -72,7 +92,9 @@ export default function FornecedoresPage() {
     setEditandoId(f.idFornecedor ?? null);
     setEditCnpj(f.cnpj);
     setEditRazaoSocial(f.razaoSocial);
-    setEditNomeFantasia(f.nomeFantasia);
+    setEditNomeFantasia(f.nomeFantasia || '');
+    setEditErroCnpj('');
+    setEditErroRazaoSocial('');
   };
 
   const cancelarEdicao = () => {
@@ -80,9 +102,19 @@ export default function FornecedoresPage() {
     setEditCnpj('');
     setEditRazaoSocial('');
     setEditNomeFantasia('');
+    setEditErroCnpj('');
+    setEditErroRazaoSocial('');
   };
 
   const salvarEdicao = async (id: number) => {
+    const msgCnpj = validarCNPJ(editCnpj);
+    const msgRazao = validarCampoObrigatorio(editRazaoSocial, 'Razão Social');
+
+    setEditErroCnpj(msgCnpj || '');
+    setEditErroRazaoSocial(msgRazao || '');
+
+    if (msgCnpj || msgRazao) return;
+
     try {
       await fornecedorService.atualizar(id, {
         cnpj: editCnpj,
@@ -93,9 +125,12 @@ export default function FornecedoresPage() {
       await carregarFornecedores();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('cnpj')) setEditErroCnpj(msg);
+        else if (msg.toLowerCase().includes('razão') || msg.toLowerCase().includes('razao')) setEditErroRazaoSocial(msg);
+        else setErroGeral(msg);
       } else {
-        alert('Erro ao atualizar fornecedor.');
+        setErroGeral('Erro ao atualizar fornecedor.');
       }
     }
   };
@@ -108,7 +143,7 @@ export default function FornecedoresPage() {
           <p className="mt-1 text-base text-muted">Gestão dos parceiros e distribuidores do mercado</p>
         </div>
         <button
-          onClick={() => setMostrarForm(!mostrarForm)}
+          onClick={() => { setMostrarForm(!mostrarForm); setErroCnpj(''); setErroRazaoSocial(''); }}
           className="flex items-center justify-center gap-2 rounded-lg bg-info px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-info-hover"
         >
           <Plus className="w-4 h-4" />
@@ -116,10 +151,10 @@ export default function FornecedoresPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -133,11 +168,13 @@ export default function FornecedoresPage() {
                 type="text"
                 required
                 value={formatCNPJ(cnpj)}
-                onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => { setCnpj(formatCNPJ(e.target.value)); setErroCnpj(''); }}
+                onBlur={() => setErroCnpj(validarCNPJ(cnpj) || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroCnpj ? 'border-danger focus:ring-danger' : 'border-border focus:ring-info'}`}
                 placeholder="00.000.000/0001-00"
                 maxLength={18}
               />
+              {erroCnpj && <p className="text-xs text-danger mt-1">{erroCnpj}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Razão Social</label>
@@ -145,10 +182,12 @@ export default function FornecedoresPage() {
                 type="text"
                 required
                 value={razaoSocial}
-                onChange={(e) => setRazaoSocial(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => { setRazaoSocial(e.target.value); setErroRazaoSocial(''); }}
+                onBlur={() => setErroRazaoSocial(validarCampoObrigatorio(razaoSocial, 'Razão Social') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroRazaoSocial ? 'border-danger focus:ring-danger' : 'border-border focus:ring-info'}`}
                 placeholder="Distribuidora de Alimentos S.A."
               />
+              {erroRazaoSocial && <p className="text-xs text-danger mt-1">{erroRazaoSocial}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Nome Fantasia</label>
@@ -196,18 +235,22 @@ export default function FornecedoresPage() {
                       <td className="p-4">
                         <input
                           type="text"
-                          value={editCnpj}
-                          onChange={(e) => setEditCnpj(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                          value={formatCNPJ(editCnpj)}
+                          onChange={(e) => { setEditCnpj(formatCNPJ(e.target.value)); setEditErroCnpj(''); }}
+                          onBlur={() => setEditErroCnpj(validarCNPJ(editCnpj) || '')}
+                          className={`w-full border rounded px-2 py-1 text-sm ${editErroCnpj ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroCnpj && <p className="text-xs text-danger mt-1">{editErroCnpj}</p>}
                       </td>
                       <td className="p-4">
                         <input
                           type="text"
                           value={editRazaoSocial}
-                          onChange={(e) => setEditRazaoSocial(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                          onChange={(e) => { setEditRazaoSocial(e.target.value); setEditErroRazaoSocial(''); }}
+                          onBlur={() => setEditErroRazaoSocial(validarCampoObrigatorio(editRazaoSocial, 'Razão Social') || '')}
+                          className={`w-full border rounded px-2 py-1 text-sm ${editErroRazaoSocial ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroRazaoSocial && <p className="text-xs text-danger mt-1">{editErroRazaoSocial}</p>}
                       </td>
                       <td className="p-4">
                         <input
@@ -219,7 +262,7 @@ export default function FornecedoresPage() {
                       </td>
                       <td className="p-4 text-right">
                         <button onClick={() => salvarEdicao(f.idFornecedor!)} className="text-muted hover:text-accent p-1 mr-1">
-                          <Check className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button onClick={cancelarEdicao} className="text-muted p-1">
                           <X className="w-4 h-4" />
@@ -234,7 +277,7 @@ export default function FornecedoresPage() {
                       <td className="p-4 text-muted">{f.nomeFantasia || '-'}</td>
                       <td className="p-4 text-right">
                         <button onClick={() => iniciarEdicao(f)} className="text-muted hover:text-accent p-1 mr-1">
-                          <Edit className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleExcluir(f.idFornecedor)} className="text-muted hover:text-danger p-1">
                           <Trash2 className="w-4 h-4" />
@@ -251,12 +294,3 @@ export default function FornecedoresPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

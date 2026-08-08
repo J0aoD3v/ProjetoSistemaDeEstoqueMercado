@@ -6,29 +6,38 @@ import { funcionarioService } from '@/services/funcionarioService';
 import { Plus, Trash2, Edit, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
 import { formatMatricula } from '@/utils/masks';
+import { validarMatricula, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function FuncionariosPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [matricula, setMatricula] = useState('');
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
+  const [erroMatricula, setErroMatricula] = useState('');
+  const [erroNome, setErroNome] = useState('');
+  const [erroCargo, setErroCargo] = useState('');
+
   const [editMatricula, setEditMatricula] = useState('');
   const [editNome, setEditNome] = useState('');
   const [editCargo, setEditCargo] = useState('');
   const [editandoId, setEditandoId] = useState<number | null>(null);
 
+  const [editErroMatricula, setEditErroMatricula] = useState('');
+  const [editErroNome, setEditErroNome] = useState('');
+  const [editErroCargo, setEditErroCargo] = useState('');
+
   const carregarFuncionarios = useCallback(async () => {
     try {
       const data = await funcionarioService.listarTodos();
       setFuncionarios(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de funcionários.');
+      setErroGeral('Não foi possível carregar a lista de funcionários.');
     } finally {
       setCarregando(false);
     }
@@ -40,20 +49,53 @@ export default function FuncionariosPage() {
     })();
   }, [carregarFuncionarios]);
 
+  const mapearErroBackend = (mensagem: string) => {
+    const msg = mensagem.toLowerCase();
+    if (msg.includes('matrícula') || msg.includes('matricula')) {
+      setErroMatricula(mensagem);
+      setErroNome('');
+      setErroCargo('');
+    } else if (msg.includes('nome')) {
+      setErroNome(mensagem);
+      setErroMatricula('');
+      setErroCargo('');
+    } else if (msg.includes('cargo')) {
+      setErroCargo(mensagem);
+      setErroMatricula('');
+      setErroNome('');
+    } else {
+      setErroGeral(mensagem);
+    }
+  };
+
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const errMatricula = validarMatricula(matricula);
+    const errNome = validarCampoObrigatorio(nome, 'Nome');
+    const errCargo = validarCampoObrigatorio(cargo, 'Cargo');
+
+    setErroMatricula(errMatricula ?? '');
+    setErroNome(errNome ?? '');
+    setErroCargo(errCargo ?? '');
+
+    if (errMatricula || errNome || errCargo) return;
+
     try {
       await funcionarioService.cadastrar({ matricula, nome, cargo });
       setMatricula('');
       setNome('');
       setCargo('');
       setMostrarForm(false);
+      setErroMatricula('');
+      setErroNome('');
+      setErroCargo('');
       await carregarFuncionarios();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        mapearErroBackend(err.response.data.mensagem);
       } else {
-        alert('Erro ao cadastrar funcionário.');
+        setErroGeral('Erro ao cadastrar funcionário.');
       }
     }
   };
@@ -64,7 +106,7 @@ export default function FuncionariosPage() {
       await funcionarioService.excluir(id);
       await carregarFuncionarios();
     } catch {
-      alert('Erro ao excluir funcionário.');
+      setErroGeral('Erro ao excluir funcionário.');
     }
   };
 
@@ -73,6 +115,9 @@ export default function FuncionariosPage() {
     setEditMatricula(func.matricula);
     setEditNome(func.nome);
     setEditCargo(func.cargo);
+    setEditErroMatricula('');
+    setEditErroNome('');
+    setEditErroCargo('');
   };
 
   const cancelarEdicao = () => {
@@ -80,9 +125,22 @@ export default function FuncionariosPage() {
     setEditMatricula('');
     setEditNome('');
     setEditCargo('');
+    setEditErroMatricula('');
+    setEditErroNome('');
+    setEditErroCargo('');
   };
 
   const salvarEdicao = async (id: number) => {
+    const errMatricula = validarMatricula(editMatricula);
+    const errNome = validarCampoObrigatorio(editNome, 'Nome');
+    const errCargo = validarCampoObrigatorio(editCargo, 'Cargo');
+
+    setEditErroMatricula(errMatricula ?? '');
+    setEditErroNome(errNome ?? '');
+    setEditErroCargo(errCargo ?? '');
+
+    if (errMatricula || errNome || errCargo) return;
+
     try {
       await funcionarioService.atualizar(id, {
         matricula: editMatricula,
@@ -93,9 +151,9 @@ export default function FuncionariosPage() {
       await carregarFuncionarios();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        setErroGeral(err.response.data.mensagem);
       } else {
-        alert('Erro ao atualizar funcionário.');
+        setErroGeral('Erro ao atualizar funcionário.');
       }
     }
   };
@@ -116,10 +174,10 @@ export default function FuncionariosPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -133,11 +191,16 @@ export default function FuncionariosPage() {
                 type="text"
                 required
                 value={formatMatricula(matricula)}
-                onChange={(e) => setMatricula(formatMatricula(e.target.value))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => {
+                  setMatricula(formatMatricula(e.target.value));
+                  setErroMatricula('');
+                }}
+                onBlur={() => setErroMatricula(validarMatricula(matricula) ?? '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroMatricula ? 'border-danger' : 'border-border'}`}
                 placeholder="FUNC-001"
                 maxLength={8}
               />
+              {erroMatricula && <p className="text-xs text-danger mt-1">{erroMatricula}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Nome</label>
@@ -145,10 +208,15 @@ export default function FuncionariosPage() {
                 type="text"
                 required
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => {
+                  setNome(e.target.value);
+                  setErroNome('');
+                }}
+                onBlur={() => setErroNome(validarCampoObrigatorio(nome, 'Nome') ?? '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroNome ? 'border-danger' : 'border-border'}`}
                 placeholder="João Silva"
               />
+              {erroNome && <p className="text-xs text-danger mt-1">{erroNome}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Cargo</label>
@@ -156,10 +224,15 @@ export default function FuncionariosPage() {
                 type="text"
                 required
                 value={cargo}
-                onChange={(e) => setCargo(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => {
+                  setCargo(e.target.value);
+                  setErroCargo('');
+                }}
+                onBlur={() => setErroCargo(validarCampoObrigatorio(cargo, 'Cargo') ?? '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroCargo ? 'border-danger' : 'border-border'}`}
                 placeholder="Operador de Caixa"
               />
+              {erroCargo && <p className="text-xs text-danger mt-1">{erroCargo}</p>}
             </div>
           </div>
           <div className="flex justify-end pt-2">
@@ -179,7 +252,7 @@ export default function FuncionariosPage() {
           </div>
         ) : (
           <table className="w-full min-w-[700px] border-collapse text-left text-base">
-            <thead className="border-b border-border bg-surface text-xs font-bold uppercase tracking-wider text-foreground bg-surface text-foreground">
+            <thead className="border-b border-border bg-surface text-xs font-bold uppercase tracking-wider text-foreground">
               <tr>
                 <th className="p-4">ID</th>
                 <th className="p-4">Matrícula</th>
@@ -198,25 +271,40 @@ export default function FuncionariosPage() {
                         <input
                           type="text"
                           value={editMatricula}
-                          onChange={(e) => setEditMatricula(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                          onChange={(e) => {
+                            setEditMatricula(e.target.value);
+                            setEditErroMatricula('');
+                          }}
+                          onBlur={() => setEditErroMatricula(validarMatricula(editMatricula) ?? '')}
+                          className={`w-full border rounded px-2 py-1 text-sm ${editErroMatricula ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroMatricula && <p className="text-xs text-danger mt-1">{editErroMatricula}</p>}
                       </td>
                       <td className="p-4">
                         <input
                           type="text"
                           value={editNome}
-                          onChange={(e) => setEditNome(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                          onChange={(e) => {
+                            setEditNome(e.target.value);
+                            setEditErroNome('');
+                          }}
+                          onBlur={() => setEditErroNome(validarCampoObrigatorio(editNome, 'Nome') ?? '')}
+                          className={`w-full border rounded px-2 py-1 text-sm ${editErroNome ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroNome && <p className="text-xs text-danger mt-1">{editErroNome}</p>}
                       </td>
                       <td className="p-4">
                         <input
                           type="text"
                           value={editCargo}
-                          onChange={(e) => setEditCargo(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                          onChange={(e) => {
+                            setEditCargo(e.target.value);
+                            setEditErroCargo('');
+                          }}
+                          onBlur={() => setEditErroCargo(validarCampoObrigatorio(editCargo, 'Cargo') ?? '')}
+                          className={`w-full border rounded px-2 py-1 text-sm ${editErroCargo ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroCargo && <p className="text-xs text-danger mt-1">{editErroCargo}</p>}
                       </td>
                       <td className="p-4 text-right">
                         <button onClick={() => salvarEdicao(f.idFuncionario!)} className="text-muted hover:text-accent p-1 mr-1">
@@ -252,12 +340,3 @@ export default function FuncionariosPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

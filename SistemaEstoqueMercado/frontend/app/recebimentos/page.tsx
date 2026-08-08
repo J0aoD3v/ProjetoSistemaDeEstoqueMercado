@@ -5,11 +5,12 @@ import { Recebimento } from '@/types';
 import { recebimentoService } from '@/services/recebimentoService';
 import { Plus, Trash2, Edit, Truck, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
+import { validarNumeroPositivo, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function RecebimentosPage() {
   const [recebimentos, setRecebimentos] = useState<Recebimento[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [dataHoraChegada, setDataHoraChegada] = useState('');
   const [statusRecebimento, setStatusRecebimento] = useState('EM_CONFERENCIA');
@@ -19,6 +20,12 @@ export default function RecebimentosPage() {
   const [idVeiculo, setIdVeiculo] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
+  const [erroDataHoraChegada, setErroDataHoraChegada] = useState('');
+  const [erroIdNotaFiscal, setErroIdNotaFiscal] = useState('');
+  const [erroIdFuncionario, setErroIdFuncionario] = useState('');
+  const [erroIdMotorista, setErroIdMotorista] = useState('');
+  const [erroIdVeiculo, setErroIdVeiculo] = useState('');
+
   const [editDataHoraChegada, setEditDataHoraChegada] = useState('');
   const [editStatusRecebimento, setEditStatusRecebimento] = useState('');
   const [editIdNotaFiscal, setEditIdNotaFiscal] = useState('');
@@ -27,13 +34,19 @@ export default function RecebimentosPage() {
   const [editIdVeiculo, setEditIdVeiculo] = useState('');
   const [editandoId, setEditandoId] = useState<number | null>(null);
 
+  const [editErroDataHoraChegada, setEditErroDataHoraChegada] = useState('');
+  const [editErroIdNotaFiscal, setEditErroIdNotaFiscal] = useState('');
+  const [editErroIdFuncionario, setEditErroIdFuncionario] = useState('');
+  const [editErroIdMotorista, setEditErroIdMotorista] = useState('');
+  const [editErroIdVeiculo, setEditErroIdVeiculo] = useState('');
+
   const carregarRecebimentos = useCallback(async () => {
     try {
       const data = await recebimentoService.listarTodos();
       setRecebimentos(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de recebimentos.');
+      setErroGeral('Não foi possível carregar a lista de recebimentos.');
     } finally {
       setCarregando(false);
     }
@@ -45,8 +58,75 @@ export default function RecebimentosPage() {
     })();
   }, [carregarRecebimentos]);
 
+  const mapearErroBackend = (mensagem: string) => {
+    const msg = mensagem.toLowerCase();
+    if (msg.includes('datahora') || msg.includes('data') || msg.includes('chegada')) {
+      setErroDataHoraChegada(mensagem);
+    } else if (msg.includes('notafiscal') || msg.includes('nota fiscal')) {
+      setErroIdNotaFiscal(mensagem);
+    } else if (msg.includes('funcionario') || msg.includes('funcionário')) {
+      setErroIdFuncionario(mensagem);
+    } else if (msg.includes('motorista')) {
+      setErroIdMotorista(mensagem);
+    } else if (msg.includes('veiculo') || msg.includes('veículo')) {
+      setErroIdVeiculo(mensagem);
+    } else {
+      setErroGeral(mensagem);
+    }
+  };
+
+  const mapearErroBackendEdicao = (mensagem: string) => {
+    const msg = mensagem.toLowerCase();
+    if (msg.includes('datahora') || msg.includes('data') || msg.includes('chegada')) {
+      setEditErroDataHoraChegada(mensagem);
+    } else if (msg.includes('notafiscal') || msg.includes('nota fiscal')) {
+      setEditErroIdNotaFiscal(mensagem);
+    } else if (msg.includes('funcionario') || msg.includes('funcionário')) {
+      setEditErroIdFuncionario(mensagem);
+    } else if (msg.includes('motorista')) {
+      setEditErroIdMotorista(mensagem);
+    } else if (msg.includes('veiculo') || msg.includes('veículo')) {
+      setEditErroIdVeiculo(mensagem);
+    } else {
+      setErroGeral(mensagem);
+    }
+  };
+
+  const validarFormulario = () => {
+    let valido = true;
+    const eData = validarCampoObrigatorio(dataHoraChegada, 'Data/Hora Chegada');
+    const eNota = validarNumeroPositivo(idNotaFiscal, 'ID Nota Fiscal');
+    const eFunc = validarNumeroPositivo(idFuncionario, 'ID Funcionário');
+    const eMot = validarNumeroPositivo(idMotorista, 'ID Motorista');
+    const eVeic = validarNumeroPositivo(idVeiculo, 'ID Veículo');
+    setErroDataHoraChegada(eData || '');
+    setErroIdNotaFiscal(eNota || '');
+    setErroIdFuncionario(eFunc || '');
+    setErroIdMotorista(eMot || '');
+    setErroIdVeiculo(eVeic || '');
+    if (eData || eNota || eFunc || eMot || eVeic) valido = false;
+    return valido;
+  };
+
+  const validarFormularioEdicao = () => {
+    let valido = true;
+    const eData = validarCampoObrigatorio(editDataHoraChegada, 'Data/Hora Chegada');
+    const eNota = validarNumeroPositivo(editIdNotaFiscal, 'ID Nota Fiscal');
+    const eFunc = validarNumeroPositivo(editIdFuncionario, 'ID Funcionário');
+    const eMot = validarNumeroPositivo(editIdMotorista, 'ID Motorista');
+    const eVeic = validarNumeroPositivo(editIdVeiculo, 'ID Veículo');
+    setEditErroDataHoraChegada(eData || '');
+    setEditErroIdNotaFiscal(eNota || '');
+    setEditErroIdFuncionario(eFunc || '');
+    setEditErroIdMotorista(eMot || '');
+    setEditErroIdVeiculo(eVeic || '');
+    if (eData || eNota || eFunc || eMot || eVeic) valido = false;
+    return valido;
+  };
+
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validarFormulario()) return;
     try {
       await recebimentoService.cadastrar({
         dataHoraChegada: new Date(dataHoraChegada).toISOString(),
@@ -62,24 +142,31 @@ export default function RecebimentosPage() {
       setIdFuncionario('');
       setIdMotorista('');
       setIdVeiculo('');
+      setErroDataHoraChegada('');
+      setErroIdNotaFiscal('');
+      setErroIdFuncionario('');
+      setErroIdMotorista('');
+      setErroIdVeiculo('');
       setMostrarForm(false);
       await carregarRecebimentos();
     } catch (err) {
+      setErroGeral('');
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        mapearErroBackend(err.response.data.mensagem);
       } else {
-        alert('Erro ao cadastrar recebimento.');
+        setErroGeral('Erro ao cadastrar recebimento.');
       }
     }
   };
 
   const handleExcluir = async (id?: number) => {
-    if (!id || !confirm('Deseja excluir este recebimento?')) return;
+    if (!id) return;
+    if (!confirm('Deseja excluir este recebimento?')) return;
     try {
       await recebimentoService.excluir(id);
       await carregarRecebimentos();
     } catch {
-      alert('Erro ao excluir recebimento.');
+      setErroGeral('Erro ao excluir recebimento.');
     }
   };
 
@@ -91,6 +178,12 @@ export default function RecebimentosPage() {
     setEditIdFuncionario(String(r.idFuncionario));
     setEditIdMotorista(String(r.idMotorista));
     setEditIdVeiculo(String(r.idVeiculo));
+    setEditErroDataHoraChegada('');
+    setEditErroIdNotaFiscal('');
+    setEditErroIdFuncionario('');
+    setEditErroIdMotorista('');
+    setEditErroIdVeiculo('');
+    setErroGeral('');
   };
 
   const cancelarEdicao = () => {
@@ -101,9 +194,15 @@ export default function RecebimentosPage() {
     setEditIdFuncionario('');
     setEditIdMotorista('');
     setEditIdVeiculo('');
+    setEditErroDataHoraChegada('');
+    setEditErroIdNotaFiscal('');
+    setEditErroIdFuncionario('');
+    setEditErroIdMotorista('');
+    setEditErroIdVeiculo('');
   };
 
   const salvarEdicao = async (id: number) => {
+    if (!validarFormularioEdicao()) return;
     try {
       await recebimentoService.atualizar(id, {
         dataHoraChegada: new Date(editDataHoraChegada).toISOString(),
@@ -116,10 +215,11 @@ export default function RecebimentosPage() {
       cancelarEdicao();
       await carregarRecebimentos();
     } catch (err) {
+      setErroGeral('');
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        mapearErroBackendEdicao(err.response.data.mensagem);
       } else {
-        alert('Erro ao atualizar recebimento.');
+        setErroGeral('Erro ao atualizar recebimento.');
       }
     }
   };
@@ -140,10 +240,10 @@ export default function RecebimentosPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -157,9 +257,17 @@ export default function RecebimentosPage() {
                 type="datetime-local"
                 required
                 value={dataHoraChegada}
-                onChange={(e) => setDataHoraChegada(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => {
+                  setDataHoraChegada(e.target.value);
+                  setErroDataHoraChegada('');
+                }}
+                onBlur={() => {
+                  const e = validarCampoObrigatorio(dataHoraChegada, 'Data/Hora Chegada');
+                  setErroDataHoraChegada(e || '');
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroDataHoraChegada ? 'border-danger' : 'border-border'}`}
               />
+              {erroDataHoraChegada && <p className="text-xs text-danger mt-1">{erroDataHoraChegada}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Status</label>
@@ -179,10 +287,18 @@ export default function RecebimentosPage() {
                 type="number"
                 required
                 value={idNotaFiscal}
-                onChange={(e) => setIdNotaFiscal(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => {
+                  setIdNotaFiscal(e.target.value);
+                  setErroIdNotaFiscal('');
+                }}
+                onBlur={() => {
+                  const e = validarNumeroPositivo(idNotaFiscal, 'ID Nota Fiscal');
+                  setErroIdNotaFiscal(e || '');
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdNotaFiscal ? 'border-danger' : 'border-border'}`}
                 placeholder="1"
               />
+              {erroIdNotaFiscal && <p className="text-xs text-danger mt-1">{erroIdNotaFiscal}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">ID Funcionário</label>
@@ -190,10 +306,18 @@ export default function RecebimentosPage() {
                 type="number"
                 required
                 value={idFuncionario}
-                onChange={(e) => setIdFuncionario(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => {
+                  setIdFuncionario(e.target.value);
+                  setErroIdFuncionario('');
+                }}
+                onBlur={() => {
+                  const e = validarNumeroPositivo(idFuncionario, 'ID Funcionário');
+                  setErroIdFuncionario(e || '');
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdFuncionario ? 'border-danger' : 'border-border'}`}
                 placeholder="1"
               />
+              {erroIdFuncionario && <p className="text-xs text-danger mt-1">{erroIdFuncionario}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">ID Motorista</label>
@@ -201,10 +325,18 @@ export default function RecebimentosPage() {
                 type="number"
                 required
                 value={idMotorista}
-                onChange={(e) => setIdMotorista(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => {
+                  setIdMotorista(e.target.value);
+                  setErroIdMotorista('');
+                }}
+                onBlur={() => {
+                  const e = validarNumeroPositivo(idMotorista, 'ID Motorista');
+                  setErroIdMotorista(e || '');
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdMotorista ? 'border-danger' : 'border-border'}`}
                 placeholder="1"
               />
+              {erroIdMotorista && <p className="text-xs text-danger mt-1">{erroIdMotorista}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">ID Veículo</label>
@@ -212,10 +344,18 @@ export default function RecebimentosPage() {
                 type="number"
                 required
                 value={idVeiculo}
-                onChange={(e) => setIdVeiculo(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
+                onChange={(e) => {
+                  setIdVeiculo(e.target.value);
+                  setErroIdVeiculo('');
+                }}
+                onBlur={() => {
+                  const e = validarNumeroPositivo(idVeiculo, 'ID Veículo');
+                  setErroIdVeiculo(e || '');
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdVeiculo ? 'border-danger' : 'border-border'}`}
                 placeholder="1"
               />
+              {erroIdVeiculo && <p className="text-xs text-danger mt-1">{erroIdVeiculo}</p>}
             </div>
           </div>
           <div className="flex justify-end pt-2">
@@ -255,12 +395,22 @@ export default function RecebimentosPage() {
                     <>
                       <td className="p-4 font-mono text-muted">#{r.idRecebimento}</td>
                       <td className="p-4">
-                        <input
-                          type="datetime-local"
-                          value={editDataHoraChegada}
-                          onChange={(e) => setEditDataHoraChegada(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
-                        />
+                        <div className="flex flex-col">
+                          <input
+                            type="datetime-local"
+                            value={editDataHoraChegada}
+                            onChange={(e) => {
+                              setEditDataHoraChegada(e.target.value);
+                              setEditErroDataHoraChegada('');
+                            }}
+                            onBlur={() => {
+                              const e = validarCampoObrigatorio(editDataHoraChegada, 'Data/Hora Chegada');
+                              setEditErroDataHoraChegada(e || '');
+                            }}
+                            className={`w-full border rounded px-2 py-1 text-xs ${editErroDataHoraChegada ? 'border-danger' : 'border-border'}`}
+                          />
+                          {editErroDataHoraChegada && <p className="text-xs text-danger mt-1">{editErroDataHoraChegada}</p>}
+                        </div>
                       </td>
                       <td className="p-4">
                         <select
@@ -274,36 +424,76 @@ export default function RecebimentosPage() {
                         </select>
                       </td>
                       <td className="p-4">
-                        <input
-                          type="number"
-                          value={editIdNotaFiscal}
-                          onChange={(e) => setEditIdNotaFiscal(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
-                        />
+                        <div className="flex flex-col">
+                          <input
+                            type="number"
+                            value={editIdNotaFiscal}
+                            onChange={(e) => {
+                              setEditIdNotaFiscal(e.target.value);
+                              setEditErroIdNotaFiscal('');
+                            }}
+                            onBlur={() => {
+                              const e = validarNumeroPositivo(editIdNotaFiscal, 'ID Nota Fiscal');
+                              setEditErroIdNotaFiscal(e || '');
+                            }}
+                            className={`w-full border rounded px-2 py-1 text-xs ${editErroIdNotaFiscal ? 'border-danger' : 'border-border'}`}
+                          />
+                          {editErroIdNotaFiscal && <p className="text-xs text-danger mt-1">{editErroIdNotaFiscal}</p>}
+                        </div>
                       </td>
                       <td className="p-4">
-                        <input
-                          type="number"
-                          value={editIdFuncionario}
-                          onChange={(e) => setEditIdFuncionario(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
-                        />
+                        <div className="flex flex-col">
+                          <input
+                            type="number"
+                            value={editIdFuncionario}
+                            onChange={(e) => {
+                              setEditIdFuncionario(e.target.value);
+                              setEditErroIdFuncionario('');
+                            }}
+                            onBlur={() => {
+                              const e = validarNumeroPositivo(editIdFuncionario, 'ID Funcionário');
+                              setEditErroIdFuncionario(e || '');
+                            }}
+                            className={`w-full border rounded px-2 py-1 text-xs ${editErroIdFuncionario ? 'border-danger' : 'border-border'}`}
+                          />
+                          {editErroIdFuncionario && <p className="text-xs text-danger mt-1">{editErroIdFuncionario}</p>}
+                        </div>
                       </td>
                       <td className="p-4">
-                        <input
-                          type="number"
-                          value={editIdMotorista}
-                          onChange={(e) => setEditIdMotorista(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
-                        />
+                        <div className="flex flex-col">
+                          <input
+                            type="number"
+                            value={editIdMotorista}
+                            onChange={(e) => {
+                              setEditIdMotorista(e.target.value);
+                              setEditErroIdMotorista('');
+                            }}
+                            onBlur={() => {
+                              const e = validarNumeroPositivo(editIdMotorista, 'ID Motorista');
+                              setEditErroIdMotorista(e || '');
+                            }}
+                            className={`w-full border rounded px-2 py-1 text-xs ${editErroIdMotorista ? 'border-danger' : 'border-border'}`}
+                          />
+                          {editErroIdMotorista && <p className="text-xs text-danger mt-1">{editErroIdMotorista}</p>}
+                        </div>
                       </td>
                       <td className="p-4">
-                        <input
-                          type="number"
-                          value={editIdVeiculo}
-                          onChange={(e) => setEditIdVeiculo(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
-                        />
+                        <div className="flex flex-col">
+                          <input
+                            type="number"
+                            value={editIdVeiculo}
+                            onChange={(e) => {
+                              setEditIdVeiculo(e.target.value);
+                              setEditErroIdVeiculo('');
+                            }}
+                            onBlur={() => {
+                              const e = validarNumeroPositivo(editIdVeiculo, 'ID Veículo');
+                              setEditErroIdVeiculo(e || '');
+                            }}
+                            className={`w-full border rounded px-2 py-1 text-xs ${editErroIdVeiculo ? 'border-danger' : 'border-border'}`}
+                          />
+                          {editErroIdVeiculo && <p className="text-xs text-danger mt-1">{editErroIdVeiculo}</p>}
+                        </div>
                       </td>
                       <td className="p-4 text-right">
                         <button onClick={() => salvarEdicao(r.idRecebimento!)} className="text-muted hover:text-accent p-1 mr-1">
@@ -350,12 +540,3 @@ export default function RecebimentosPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

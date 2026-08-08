@@ -5,11 +5,12 @@ import { Produto } from '@/types';
 import { produtoService } from '@/services/produtoService';
 import { Plus, Trash2, Edit, PackageCheck, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
+import { validarSKU, validarCodigoBarras, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [sku, setSku] = useState('');
   const [codigoBarras, setCodigoBarras] = useState('');
@@ -18,6 +19,11 @@ export default function ProdutosPage() {
   const [statusAtivo, setStatusAtivo] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
 
+  const [erroSku, setErroSku] = useState('');
+  const [erroCodigoBarras, setErroCodigoBarras] = useState('');
+  const [erroDescricao, setErroDescricao] = useState('');
+  const [erroUnidadeMedida, setErroUnidadeMedida] = useState('');
+
   const [editSku, setEditSku] = useState('');
   const [editCodigoBarras, setEditCodigoBarras] = useState('');
   const [editDescricao, setEditDescricao] = useState('');
@@ -25,14 +31,19 @@ export default function ProdutosPage() {
   const [editStatusAtivo, setEditStatusAtivo] = useState(true);
   const [editandoId, setEditandoId] = useState<number | null>(null);
 
+  const [editErroSku, setEditErroSku] = useState('');
+  const [editErroCodigoBarras, setEditErroCodigoBarras] = useState('');
+  const [editErroDescricao, setEditErroDescricao] = useState('');
+  const [editErroUnidadeMedida, setEditErroUnidadeMedida] = useState('');
+
   const carregarProdutos = useCallback(async () => {
     try {
       setCarregando(true);
       const data = await produtoService.listarTodos();
       setProdutos(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível conectar ao servidor backend.');
+      setErroGeral('Não foi possível conectar ao servidor backend.');
     } finally {
       setCarregando(false);
     }
@@ -44,8 +55,89 @@ export default function ProdutosPage() {
     })();
   }, [carregarProdutos]);
 
+  const validarFormularioCadastro = (): boolean => {
+    let isValid = true;
+
+    const erroSkuValidacao = validarSKU(sku);
+    if (erroSkuValidacao) {
+      setErroSku(erroSkuValidacao);
+      isValid = false;
+    } else {
+      setErroSku('');
+    }
+
+    const erroCodigoBarrasValidacao = validarCodigoBarras(codigoBarras);
+    if (erroCodigoBarrasValidacao) {
+      setErroCodigoBarras(erroCodigoBarrasValidacao);
+      isValid = false;
+    } else {
+      setErroCodigoBarras('');
+    }
+
+    const erroDescricaoValidacao = validarCampoObrigatorio(descricao, 'Descrição');
+    if (erroDescricaoValidacao) {
+      setErroDescricao(erroDescricaoValidacao);
+      isValid = false;
+    } else {
+      setErroDescricao('');
+    }
+
+    const erroUnidadeMedidaValidacao = validarCampoObrigatorio(unidadeMedida, 'Unidade de Medida');
+    if (erroUnidadeMedidaValidacao) {
+      setErroUnidadeMedida(erroUnidadeMedidaValidacao);
+      isValid = false;
+    } else {
+      setErroUnidadeMedida('');
+    }
+
+    return isValid;
+  };
+
+  const validarFormularioEdicao = (): boolean => {
+    let isValid = true;
+
+    const erroSkuValidacao = validarSKU(editSku);
+    if (erroSkuValidacao) {
+      setEditErroSku(erroSkuValidacao);
+      isValid = false;
+    } else {
+      setEditErroSku('');
+    }
+
+    const erroCodigoBarrasValidacao = validarCodigoBarras(editCodigoBarras);
+    if (erroCodigoBarrasValidacao) {
+      setEditErroCodigoBarras(erroCodigoBarrasValidacao);
+      isValid = false;
+    } else {
+      setEditErroCodigoBarras('');
+    }
+
+    const erroDescricaoValidacao = validarCampoObrigatorio(editDescricao, 'Descrição');
+    if (erroDescricaoValidacao) {
+      setEditErroDescricao(erroDescricaoValidacao);
+      isValid = false;
+    } else {
+      setEditErroDescricao('');
+    }
+
+    const erroUnidadeMedidaValidacao = validarCampoObrigatorio(editUnidadeMedida, 'Unidade de Medida');
+    if (erroUnidadeMedidaValidacao) {
+      setEditErroUnidadeMedida(erroUnidadeMedidaValidacao);
+      isValid = false;
+    } else {
+      setEditErroUnidadeMedida('');
+    }
+
+    return isValid;
+  };
+
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validarFormularioCadastro()) {
+      return;
+    }
+
     try {
       await produtoService.cadastrar({
         sku,
@@ -59,12 +151,27 @@ export default function ProdutosPage() {
       setCodigoBarras('');
       setDescricao('');
       setMostrarForm(false);
+      setErroSku('');
+      setErroCodigoBarras('');
+      setErroDescricao('');
+      setErroUnidadeMedida('');
       await carregarProdutos();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const mensagem = err.response.data.mensagem.toLowerCase();
+        if (mensagem.includes('sku')) {
+          setErroSku(err.response.data.mensagem);
+        } else if (mensagem.includes('código') || mensagem.includes('barras')) {
+          setErroCodigoBarras(err.response.data.mensagem);
+        } else if (mensagem.includes('descrição')) {
+          setErroDescricao(err.response.data.mensagem);
+        } else if (mensagem.includes('unidade')) {
+          setErroUnidadeMedida(err.response.data.mensagem);
+        } else {
+          setErroGeral(err.response.data.mensagem);
+        }
       } else {
-        alert('Erro ao cadastrar produto.');
+        setErroGeral('Erro ao cadastrar produto.');
       }
     }
   };
@@ -75,7 +182,7 @@ export default function ProdutosPage() {
       await produtoService.excluir(id);
       await carregarProdutos();
     } catch {
-      alert('Erro ao excluir produto.');
+      setErroGeral('Erro ao excluir produto.');
     }
   };
 
@@ -86,6 +193,10 @@ export default function ProdutosPage() {
     setEditDescricao(p.descricao);
     setEditUnidadeMedida(p.unidadeMedida);
     setEditStatusAtivo(p.statusAtivo);
+    setEditErroSku('');
+    setEditErroCodigoBarras('');
+    setEditErroDescricao('');
+    setEditErroUnidadeMedida('');
   };
 
   const cancelarEdicao = () => {
@@ -95,9 +206,17 @@ export default function ProdutosPage() {
     setEditDescricao('');
     setEditUnidadeMedida('UN');
     setEditStatusAtivo(true);
+    setEditErroSku('');
+    setEditErroCodigoBarras('');
+    setEditErroDescricao('');
+    setEditErroUnidadeMedida('');
   };
 
   const salvarEdicao = async (id: number) => {
+    if (!validarFormularioEdicao()) {
+      return;
+    }
+
     try {
       await produtoService.atualizar(id, {
         sku: editSku,
@@ -110,9 +229,20 @@ export default function ProdutosPage() {
       await carregarProdutos();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const mensagem = err.response.data.mensagem.toLowerCase();
+        if (mensagem.includes('sku')) {
+          setEditErroSku(err.response.data.mensagem);
+        } else if (mensagem.includes('código') || mensagem.includes('barras')) {
+          setEditErroCodigoBarras(err.response.data.mensagem);
+        } else if (mensagem.includes('descrição')) {
+          setEditErroDescricao(err.response.data.mensagem);
+        } else if (mensagem.includes('unidade')) {
+          setEditErroUnidadeMedida(err.response.data.mensagem);
+        } else {
+          setErroGeral(err.response.data.mensagem);
+        }
       } else {
-        alert('Erro ao atualizar produto.');
+        setErroGeral('Erro ao atualizar produto.');
       }
     }
   };
@@ -137,10 +267,10 @@ export default function ProdutosPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-xl border border-danger/50 bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -157,10 +287,18 @@ export default function ProdutosPage() {
                 type="text"
                 required
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+                onChange={(e) => {
+                  setSku(e.target.value);
+                  if (erroSku) setErroSku('');
+                }}
+                onBlur={() => {
+                  const erro = validarSKU(sku);
+                  if (erro) setErroSku(erro);
+                }}
+                className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent ${erroSku ? 'border-danger' : 'border-border'}`}
                 placeholder="PROD-001"
               />
+              {erroSku && <p className="text-xs text-danger mt-1">{erroSku}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-foreground">Código de Barras</label>
@@ -168,23 +306,39 @@ export default function ProdutosPage() {
                 type="text"
                 required
                 value={codigoBarras}
-                onChange={(e) => setCodigoBarras(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+                onChange={(e) => {
+                  setCodigoBarras(e.target.value);
+                  if (erroCodigoBarras) setErroCodigoBarras('');
+                }}
+                onBlur={() => {
+                  const erro = validarCodigoBarras(codigoBarras);
+                  if (erro) setErroCodigoBarras(erro);
+                }}
+                className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent ${erroCodigoBarras ? 'border-danger' : 'border-border'}`}
                 placeholder="7891234567890"
               />
+              {erroCodigoBarras && <p className="text-xs text-danger mt-1">{erroCodigoBarras}</p>}
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-foreground">Unidade de Medida</label>
               <select
                 value={unidadeMedida}
-                onChange={(e) => setUnidadeMedida(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                onChange={(e) => {
+                  setUnidadeMedida(e.target.value);
+                  if (erroUnidadeMedida) setErroUnidadeMedida('');
+                }}
+                onBlur={() => {
+                  const erro = validarCampoObrigatorio(unidadeMedida, 'Unidade de Medida');
+                  if (erro) setErroUnidadeMedida(erro);
+                }}
+                className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent ${erroUnidadeMedida ? 'border-danger' : 'border-border'}`}
               >
                 <option value="UN">Unidade (UN)</option>
                 <option value="KG">Quilograma (KG)</option>
                 <option value="CX">Caixa (CX)</option>
                 <option value="LT">Litro (LT)</option>
               </select>
+              {erroUnidadeMedida && <p className="text-xs text-danger mt-1">{erroUnidadeMedida}</p>}
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-foreground">Descrição</label>
@@ -192,10 +346,18 @@ export default function ProdutosPage() {
                 type="text"
                 required
                 value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+                onChange={(e) => {
+                  setDescricao(e.target.value);
+                  if (erroDescricao) setErroDescricao('');
+                }}
+                onBlur={() => {
+                  const erro = validarCampoObrigatorio(descricao, 'Descrição');
+                  if (erro) setErroDescricao(erro);
+                }}
+                className={`w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent ${erroDescricao ? 'border-danger' : 'border-border'}`}
                 placeholder="Arroz Tipo 1 - 5kg"
               />
+              {erroDescricao && <p className="text-xs text-danger mt-1">{erroDescricao}</p>}
             </div>
             <div className="flex items-center gap-2 pt-6">
               <input
@@ -250,37 +412,69 @@ export default function ProdutosPage() {
                         <input
                           type="text"
                           value={editSku}
-                          onChange={(e) => setEditSku(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                          onChange={(e) => {
+                            setEditSku(e.target.value);
+                            if (editErroSku) setEditErroSku('');
+                          }}
+                          onBlur={() => {
+                            const erro = validarSKU(editSku);
+                            if (erro) setEditErroSku(erro);
+                          }}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroSku ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroSku && <p className="text-xs text-danger mt-1">{editErroSku}</p>}
                       </td>
                       <td className="p-4">
                         <input
                           type="text"
                           value={editCodigoBarras}
-                          onChange={(e) => setEditCodigoBarras(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                          onChange={(e) => {
+                            setEditCodigoBarras(e.target.value);
+                            if (editErroCodigoBarras) setEditErroCodigoBarras('');
+                          }}
+                          onBlur={() => {
+                            const erro = validarCodigoBarras(editCodigoBarras);
+                            if (erro) setEditErroCodigoBarras(erro);
+                          }}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroCodigoBarras ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroCodigoBarras && <p className="text-xs text-danger mt-1">{editErroCodigoBarras}</p>}
                       </td>
                       <td className="p-4">
                         <input
                           type="text"
                           value={editDescricao}
-                          onChange={(e) => setEditDescricao(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                          onChange={(e) => {
+                            setEditDescricao(e.target.value);
+                            if (editErroDescricao) setEditErroDescricao('');
+                          }}
+                          onBlur={() => {
+                            const erro = validarCampoObrigatorio(editDescricao, 'Descrição');
+                            if (erro) setEditErroDescricao(erro);
+                          }}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroDescricao ? 'border-danger' : 'border-border'}`}
                         />
+                        {editErroDescricao && <p className="text-xs text-danger mt-1">{editErroDescricao}</p>}
                       </td>
                       <td className="p-4">
                         <select
                           value={editUnidadeMedida}
-                          onChange={(e) => setEditUnidadeMedida(e.target.value)}
-                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                          onChange={(e) => {
+                            setEditUnidadeMedida(e.target.value);
+                            if (editErroUnidadeMedida) setEditErroUnidadeMedida('');
+                          }}
+                          onBlur={() => {
+                            const erro = validarCampoObrigatorio(editUnidadeMedida, 'Unidade de Medida');
+                            if (erro) setEditErroUnidadeMedida(erro);
+                          }}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroUnidadeMedida ? 'border-danger' : 'border-border'}`}
                         >
                           <option value="UN">UN</option>
                           <option value="KG">KG</option>
                           <option value="CX">CX</option>
                           <option value="LT">LT</option>
                         </select>
+                        {editErroUnidadeMedida && <p className="text-xs text-danger mt-1">{editErroUnidadeMedida}</p>}
                       </td>
                       <td className="p-4">
                         <input
@@ -344,12 +538,3 @@ export default function ProdutosPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
