@@ -126,7 +126,10 @@ export default function VeiculosPage() {
                 type="text"
                 required
                 value={formatPlate(placa)}
-                onChange={(e) => { setPlaca(formatPlate(e.target.value)); setErroPlaca(''); }}
+                onChange={(e) => {
+                  setPlaca(formatPlate(e.target.value));
+                  setErroPlaca(/[^A-Za-z0-9-]/.test(e.target.value) ? 'Digite apenas letras e números.' : '');
+                }}
                 onBlur={() => setErroPlaca(validarPlaca(placa) || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroPlaca ? 'border-danger focus:ring-danger' : 'border-border focus:ring-warning'}`}
                 placeholder="ABC-1234"

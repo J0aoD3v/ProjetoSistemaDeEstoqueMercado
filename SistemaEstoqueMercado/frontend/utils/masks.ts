@@ -2,6 +2,13 @@ export function apenasNumeros(value: string): string {
   return value.replace(/\D/g, '');
 }
 
+export function apenasNumerosDecimal(value: string): string {
+  const limpo = value.replace(/[^0-9.,]/g, '').replace(/,/g, '.');
+  const primeiroPonto = limpo.indexOf('.');
+  if (primeiroPonto === -1) return limpo;
+  return limpo.slice(0, primeiroPonto + 1) + limpo.slice(primeiroPonto + 1).replace(/\./g, '');
+}
+
 export function formatCPF(value: string): string {
   const nums = apenasNumeros(value).slice(0, 11);
   return nums

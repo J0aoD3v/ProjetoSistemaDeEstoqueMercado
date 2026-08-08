@@ -288,8 +288,9 @@ export default function ProdutosPage() {
                 required
                 value={sku}
                 onChange={(e) => {
-                  setSku(e.target.value);
-                  if (erroSku) setErroSku('');
+                  const raw = e.target.value;
+                  setSku(raw.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
+                  setErroSku(/[^A-Za-z0-9-]/.test(raw) ? 'Digite apenas letras, números e hífen.' : '');
                 }}
                 onBlur={() => {
                   const erro = validarSKU(sku);
@@ -307,8 +308,10 @@ export default function ProdutosPage() {
                 required
                 value={codigoBarras}
                 onChange={(e) => {
-                  setCodigoBarras(e.target.value);
-                  if (erroCodigoBarras) setErroCodigoBarras('');
+                  const raw = e.target.value;
+                  const limpo = raw.replace(/\D/g, '');
+                  setCodigoBarras(limpo);
+                  setErroCodigoBarras(raw !== limpo ? 'Digite apenas números.' : '');
                 }}
                 onBlur={() => {
                   const erro = validarCodigoBarras(codigoBarras);
@@ -413,8 +416,9 @@ export default function ProdutosPage() {
                           type="text"
                           value={editSku}
                           onChange={(e) => {
-                            setEditSku(e.target.value);
-                            if (editErroSku) setEditErroSku('');
+                            const raw = e.target.value;
+                            setEditSku(raw.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
+                            setEditErroSku(/[^A-Za-z0-9-]/.test(raw) ? 'Digite apenas letras, números e hífen.' : '');
                           }}
                           onBlur={() => {
                             const erro = validarSKU(editSku);
@@ -429,8 +433,10 @@ export default function ProdutosPage() {
                           type="text"
                           value={editCodigoBarras}
                           onChange={(e) => {
-                            setEditCodigoBarras(e.target.value);
-                            if (editErroCodigoBarras) setEditErroCodigoBarras('');
+                            const raw = e.target.value;
+                            const limpo = raw.replace(/\D/g, '');
+                            setEditCodigoBarras(limpo);
+                            setEditErroCodigoBarras(raw !== limpo ? 'Digite apenas números.' : '');
                           }}
                           onBlur={() => {
                             const erro = validarCodigoBarras(editCodigoBarras);

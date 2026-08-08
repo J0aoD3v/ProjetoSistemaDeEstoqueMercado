@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { NotaFiscal } from '@/types';
+import { NotaFiscal, Fornecedor } from '@/types';
 import { notaFiscalService } from '@/services/notaFiscalService';
+import { fornecedorService } from '@/services/fornecedorService';
 import { Plus, Trash2, FileText, AlertCircle, X } from 'lucide-react';
 import axios from 'axios';
-import { formatNFeKey } from '@/utils/masks';
+import { formatNFeKey, apenasNumerosDecimal } from '@/utils/masks';
 import { validarNFeKey, validarCampoObrigatorio, validarNumeroPositivo } from '@/utils/validators';
 
 export default function NotasFiscaisPage() {
@@ -26,6 +27,7 @@ export default function NotasFiscaisPage() {
   const [erroChaveAcessoNfe, setErroChaveAcessoNfe] = useState('');
   const [erroValorTotal, setErroValorTotal] = useState('');
   const [erroIdFornecedor, setErroIdFornecedor] = useState('');
+  const [erroDataEmissao, setErroDataEmissao] = useState('');
 
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [editNumeroNf, setEditNumeroNf] = useState('');
@@ -41,6 +43,9 @@ export default function NotasFiscaisPage() {
   const [editErroChaveAcessoNfe, setEditErroChaveAcessoNfe] = useState('');
   const [editErroValorTotal, setEditErroValorTotal] = useState('');
   const [editErroIdFornecedor, setEditErroIdFornecedor] = useState('');
+  const [editErroDataEmissao, setEditErroDataEmissao] = useState('');
+
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
   const limparErros = () => {
     setErroNumeroNf('');
@@ -48,6 +53,7 @@ export default function NotasFiscaisPage() {
     setErroChaveAcessoNfe('');
     setErroValorTotal('');
     setErroIdFornecedor('');
+    setErroDataEmissao('');
   };
 
   const validarCampos = () => {
@@ -60,13 +66,16 @@ export default function NotasFiscaisPage() {
     const errSerie = validarCampoObrigatorio(serie, 'Série');
     if (errSerie) { setErroSerie(errSerie); temErro = true; }
 
+    const errData = validarCampoObrigatorio(dataEmissao, 'Data de emissão');
+    if (errData) { setErroDataEmissao(errData); temErro = true; }
+
     const errChave = validarNFeKey(chaveAcessoNfe);
     if (errChave) { setErroChaveAcessoNfe(errChave); temErro = true; }
 
     const errValor = validarNumeroPositivo(valorTotal, 'Valor Total');
     if (errValor) { setErroValorTotal(errValor); temErro = true; }
 
-    const errFornecedor = validarNumeroPositivo(idFornecedor, 'ID Fornecedor');
+    const errFornecedor = validarCampoObrigatorio(idFornecedor, 'Fornecedor');
     if (errFornecedor) { setErroIdFornecedor(errFornecedor); temErro = true; }
 
     return !temErro;
@@ -79,6 +88,7 @@ export default function NotasFiscaisPage() {
     setEditErroChaveAcessoNfe('');
     setEditErroValorTotal('');
     setEditErroIdFornecedor('');
+    setEditErroDataEmissao('');
 
     const errNumero = validarCampoObrigatorio(editNumeroNf, 'Número NF');
     if (errNumero) { setEditErroNumeroNf(errNumero); temErro = true; }
@@ -86,13 +96,16 @@ export default function NotasFiscaisPage() {
     const errSerie = validarCampoObrigatorio(editSerie, 'Série');
     if (errSerie) { setEditErroSerie(errSerie); temErro = true; }
 
+    const errData = validarCampoObrigatorio(editDataEmissao, 'Data de emissão');
+    if (errData) { setEditErroDataEmissao(errData); temErro = true; }
+
     const errChave = validarNFeKey(editChaveAcessoNfe);
     if (errChave) { setEditErroChaveAcessoNfe(errChave); temErro = true; }
 
     const errValor = validarNumeroPositivo(editValorTotal, 'Valor Total');
     if (errValor) { setEditErroValorTotal(errValor); temErro = true; }
 
-    const errFornecedor = validarNumeroPositivo(editIdFornecedor, 'ID Fornecedor');
+    const errFornecedor = validarCampoObrigatorio(editIdFornecedor, 'Fornecedor');
     if (errFornecedor) { setEditErroIdFornecedor(errFornecedor); temErro = true; }
 
     return !temErro;
@@ -132,6 +145,7 @@ export default function NotasFiscaisPage() {
     };
 
     carregarInicial();
+    fornecedorService.listarTodos().then(setFornecedores).catch(() => setFornecedores([]));
 
     return () => {
       isMounted = false;
@@ -196,6 +210,7 @@ export default function NotasFiscaisPage() {
     setEditErroChaveAcessoNfe('');
     setEditErroValorTotal('');
     setEditErroIdFornecedor('');
+    setEditErroDataEmissao('');
     setErroGeral('');
   };
 
@@ -246,6 +261,7 @@ export default function NotasFiscaisPage() {
     setEditErroChaveAcessoNfe('');
     setEditErroValorTotal('');
     setEditErroIdFornecedor('');
+    setEditErroDataEmissao('');
     setErroGeral('');
   };
 
@@ -325,9 +341,17 @@ export default function NotasFiscaisPage() {
                 type="date"
                 required
                 value={dataEmissao}
-                onChange={(e) => setDataEmissao(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => {
+                  setDataEmissao(e.target.value);
+                  if (erroDataEmissao) setErroDataEmissao('');
+                }}
+                onBlur={() => {
+                  const err = validarCampoObrigatorio(dataEmissao, 'Data de emissão');
+                  if (err) setErroDataEmissao(err);
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroDataEmissao ? 'border-danger' : 'border-border'}`}
               />
+              {erroDataEmissao && <p className="text-xs text-danger mt-1">{erroDataEmissao}</p>}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-muted mb-1">Chave de Acesso NFE</label>
@@ -335,7 +359,10 @@ export default function NotasFiscaisPage() {
                 type="text"
                 required
                 value={formatNFeKey(chaveAcessoNfe)}
-                onChange={(e) => { setChaveAcessoNfe(formatNFeKey(e.target.value)); setErroChaveAcessoNfe(''); }}
+                onChange={(e) => {
+                  setChaveAcessoNfe(formatNFeKey(e.target.value));
+                  setErroChaveAcessoNfe(/\D/.test(e.target.value) ? 'Digite apenas números.' : '');
+                }}
                 onBlur={() => {
                   const err = validarNFeKey(chaveAcessoNfe);
                   if (err) setErroChaveAcessoNfe(err);
@@ -349,11 +376,19 @@ export default function NotasFiscaisPage() {
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Valor Total (R$)</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={valorTotal}
-                onChange={(e) => { setValorTotal(e.target.value); setErroValorTotal(''); }}
+                onChange={(e) => {
+                  const limpo = apenasNumerosDecimal(e.target.value);
+                  if (e.target.value !== limpo) {
+                    setErroValorTotal('Digite apenas números.');
+                  } else if (erroValorTotal) {
+                    setErroValorTotal('');
+                  }
+                  setValorTotal(limpo);
+                }}
                 onBlur={() => {
                   const err = validarNumeroPositivo(valorTotal, 'Valor Total');
                   if (err) setErroValorTotal(err);
@@ -364,19 +399,26 @@ export default function NotasFiscaisPage() {
               {erroValorTotal && <p className="text-xs text-danger mt-1">{erroValorTotal}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Fornecedor</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Fornecedor</label>
+              <select
                 value={idFornecedor}
-                onChange={(e) => { setIdFornecedor(e.target.value); setErroIdFornecedor(''); }}
+                onChange={(e) => {
+                  setIdFornecedor(e.target.value);
+                  if (erroIdFornecedor) setErroIdFornecedor('');
+                }}
                 onBlur={() => {
-                  const err = validarNumeroPositivo(idFornecedor, 'ID Fornecedor');
+                  const err = validarCampoObrigatorio(idFornecedor, 'Fornecedor');
                   if (err) setErroIdFornecedor(err);
                 }}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroIdFornecedor ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione o fornecedor...</option>
+                {fornecedores.map((f) => (
+                  <option key={f.idFornecedor} value={f.idFornecedor}>
+                    #{f.idFornecedor} - {f.razaoSocial}
+                  </option>
+                ))}
+              </select>
               {erroIdFornecedor && <p className="text-xs text-danger mt-1">{erroIdFornecedor}</p>}
             </div>
           </div>
@@ -435,9 +477,17 @@ export default function NotasFiscaisPage() {
                 type="date"
                 required
                 value={editDataEmissao}
-                onChange={(e) => setEditDataEmissao(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => {
+                  setEditDataEmissao(e.target.value);
+                  if (editErroDataEmissao) setEditErroDataEmissao('');
+                }}
+                onBlur={() => {
+                  const err = validarCampoObrigatorio(editDataEmissao, 'Data de emissão');
+                  if (err) setEditErroDataEmissao(err);
+                }}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${editErroDataEmissao ? 'border-danger' : 'border-border'}`}
               />
+              {editErroDataEmissao && <p className="text-xs text-danger mt-1">{editErroDataEmissao}</p>}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-muted mb-1">Chave de Acesso NFE</label>
@@ -445,7 +495,10 @@ export default function NotasFiscaisPage() {
                 type="text"
                 required
                 value={formatNFeKey(editChaveAcessoNfe)}
-                onChange={(e) => { setEditChaveAcessoNfe(formatNFeKey(e.target.value)); setEditErroChaveAcessoNfe(''); }}
+                onChange={(e) => {
+                  setEditChaveAcessoNfe(formatNFeKey(e.target.value));
+                  setEditErroChaveAcessoNfe(/\D/.test(e.target.value) ? 'Digite apenas números.' : '');
+                }}
                 onBlur={() => {
                   const err = validarNFeKey(editChaveAcessoNfe);
                   if (err) setEditErroChaveAcessoNfe(err);
@@ -459,11 +512,19 @@ export default function NotasFiscaisPage() {
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Valor Total (R$)</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={editValorTotal}
-                onChange={(e) => { setEditValorTotal(e.target.value); setEditErroValorTotal(''); }}
+                onChange={(e) => {
+                  const limpo = apenasNumerosDecimal(e.target.value);
+                  if (e.target.value !== limpo) {
+                    setEditErroValorTotal('Digite apenas números.');
+                  } else if (editErroValorTotal) {
+                    setEditErroValorTotal('');
+                  }
+                  setEditValorTotal(limpo);
+                }}
                 onBlur={() => {
                   const err = validarNumeroPositivo(editValorTotal, 'Valor Total');
                   if (err) setEditErroValorTotal(err);
@@ -474,19 +535,26 @@ export default function NotasFiscaisPage() {
               {editErroValorTotal && <p className="text-xs text-danger mt-1">{editErroValorTotal}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Fornecedor</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Fornecedor</label>
+              <select
                 value={editIdFornecedor}
-                onChange={(e) => { setEditIdFornecedor(e.target.value); setEditErroIdFornecedor(''); }}
+                onChange={(e) => {
+                  setEditIdFornecedor(e.target.value);
+                  if (editErroIdFornecedor) setEditErroIdFornecedor('');
+                }}
                 onBlur={() => {
-                  const err = validarNumeroPositivo(editIdFornecedor, 'ID Fornecedor');
+                  const err = validarCampoObrigatorio(editIdFornecedor, 'Fornecedor');
                   if (err) setEditErroIdFornecedor(err);
                 }}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${editErroIdFornecedor ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione o fornecedor...</option>
+                {fornecedores.map((f) => (
+                  <option key={f.idFornecedor} value={f.idFornecedor}>
+                    #{f.idFornecedor} - {f.razaoSocial}
+                  </option>
+                ))}
+              </select>
               {editErroIdFornecedor && <p className="text-xs text-danger mt-1">{editErroIdFornecedor}</p>}
             </div>
           </div>

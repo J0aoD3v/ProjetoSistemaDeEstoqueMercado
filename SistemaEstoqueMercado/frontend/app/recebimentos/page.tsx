@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Recebimento } from '@/types';
+import { Recebimento, NotaFiscal, Funcionario, Motorista, Veiculo } from '@/types';
 import { recebimentoService } from '@/services/recebimentoService';
+import { notaFiscalService } from '@/services/notaFiscalService';
+import { funcionarioService } from '@/services/funcionarioService';
+import { motoristaService } from '@/services/motoristaService';
+import { veiculoService } from '@/services/veiculoService';
 import { Plus, Trash2, Edit, Truck, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
-import { validarNumeroPositivo, validarCampoObrigatorio } from '@/utils/validators';
+import { validarCampoObrigatorio } from '@/utils/validators';
 
 export default function RecebimentosPage() {
   const [recebimentos, setRecebimentos] = useState<Recebimento[]>([]);
@@ -19,6 +23,11 @@ export default function RecebimentosPage() {
   const [idMotorista, setIdMotorista] = useState('');
   const [idVeiculo, setIdVeiculo] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+
+  const [notasFiscais, setNotasFiscais] = useState<NotaFiscal[]>([]);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
 
   const [erroDataHoraChegada, setErroDataHoraChegada] = useState('');
   const [erroIdNotaFiscal, setErroIdNotaFiscal] = useState('');
@@ -58,6 +67,32 @@ export default function RecebimentosPage() {
     })();
   }, [carregarRecebimentos]);
 
+  const carregarOpcoes = useCallback(async () => {
+    try {
+      const [notas, funcs, mots, veics] = await Promise.all([
+        notaFiscalService.listarTodos(),
+        funcionarioService.listarTodos(),
+        motoristaService.listarTodos(),
+        veiculoService.listarTodos(),
+      ]);
+      setNotasFiscais(notas);
+      setFuncionarios(funcs);
+      setMotoristas(mots);
+      setVeiculos(veics);
+    } catch {
+      setNotasFiscais([]);
+      setFuncionarios([]);
+      setMotoristas([]);
+      setVeiculos([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      await carregarOpcoes();
+    })();
+  }, [carregarOpcoes]);
+
   const mapearErroBackend = (mensagem: string) => {
     const msg = mensagem.toLowerCase();
     if (msg.includes('datahora') || msg.includes('data') || msg.includes('chegada')) {
@@ -93,35 +128,31 @@ export default function RecebimentosPage() {
   };
 
   const validarFormulario = () => {
-    let valido = true;
     const eData = validarCampoObrigatorio(dataHoraChegada, 'Data/Hora Chegada');
-    const eNota = validarNumeroPositivo(idNotaFiscal, 'ID Nota Fiscal');
-    const eFunc = validarNumeroPositivo(idFuncionario, 'ID Funcionário');
-    const eMot = validarNumeroPositivo(idMotorista, 'ID Motorista');
-    const eVeic = validarNumeroPositivo(idVeiculo, 'ID Veículo');
+    const eNota = validarCampoObrigatorio(idNotaFiscal, 'Nota Fiscal');
+    const eFunc = validarCampoObrigatorio(idFuncionario, 'Funcionário');
+    const eMot = validarCampoObrigatorio(idMotorista, 'Motorista');
+    const eVeic = validarCampoObrigatorio(idVeiculo, 'Veículo');
     setErroDataHoraChegada(eData || '');
     setErroIdNotaFiscal(eNota || '');
     setErroIdFuncionario(eFunc || '');
     setErroIdMotorista(eMot || '');
     setErroIdVeiculo(eVeic || '');
-    if (eData || eNota || eFunc || eMot || eVeic) valido = false;
-    return valido;
+    return !(eData || eNota || eFunc || eMot || eVeic);
   };
 
   const validarFormularioEdicao = () => {
-    let valido = true;
     const eData = validarCampoObrigatorio(editDataHoraChegada, 'Data/Hora Chegada');
-    const eNota = validarNumeroPositivo(editIdNotaFiscal, 'ID Nota Fiscal');
-    const eFunc = validarNumeroPositivo(editIdFuncionario, 'ID Funcionário');
-    const eMot = validarNumeroPositivo(editIdMotorista, 'ID Motorista');
-    const eVeic = validarNumeroPositivo(editIdVeiculo, 'ID Veículo');
+    const eNota = validarCampoObrigatorio(editIdNotaFiscal, 'Nota Fiscal');
+    const eFunc = validarCampoObrigatorio(editIdFuncionario, 'Funcionário');
+    const eMot = validarCampoObrigatorio(editIdMotorista, 'Motorista');
+    const eVeic = validarCampoObrigatorio(editIdVeiculo, 'Veículo');
     setEditErroDataHoraChegada(eData || '');
     setEditErroIdNotaFiscal(eNota || '');
     setEditErroIdFuncionario(eFunc || '');
     setEditErroIdMotorista(eMot || '');
     setEditErroIdVeiculo(eVeic || '');
-    if (eData || eNota || eFunc || eMot || eVeic) valido = false;
-    return valido;
+    return !(eData || eNota || eFunc || eMot || eVeic);
   };
 
   const handleCadastrar = async (e: React.FormEvent) => {
@@ -282,79 +313,83 @@ export default function RecebimentosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Nota Fiscal</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Nota Fiscal</label>
+              <select
                 value={idNotaFiscal}
                 onChange={(e) => {
                   setIdNotaFiscal(e.target.value);
-                  setErroIdNotaFiscal('');
+                  if (erroIdNotaFiscal) setErroIdNotaFiscal('');
                 }}
-                onBlur={() => {
-                  const e = validarNumeroPositivo(idNotaFiscal, 'ID Nota Fiscal');
-                  setErroIdNotaFiscal(e || '');
-                }}
+                onBlur={() => setErroIdNotaFiscal(validarCampoObrigatorio(idNotaFiscal, 'Nota Fiscal') || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdNotaFiscal ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione uma nota fiscal...</option>
+                {notasFiscais.map((n) => (
+                  <option key={n.idNotaFiscal} value={n.idNotaFiscal}>
+                    NF {n.numeroNf} - Série {n.serie} (#{n.idNotaFiscal})
+                  </option>
+                ))}
+              </select>
               {erroIdNotaFiscal && <p className="text-xs text-danger mt-1">{erroIdNotaFiscal}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Funcionário</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Funcionário</label>
+              <select
                 value={idFuncionario}
                 onChange={(e) => {
                   setIdFuncionario(e.target.value);
-                  setErroIdFuncionario('');
+                  if (erroIdFuncionario) setErroIdFuncionario('');
                 }}
-                onBlur={() => {
-                  const e = validarNumeroPositivo(idFuncionario, 'ID Funcionário');
-                  setErroIdFuncionario(e || '');
-                }}
+                onBlur={() => setErroIdFuncionario(validarCampoObrigatorio(idFuncionario, 'Funcionário') || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdFuncionario ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione o funcionário...</option>
+                {funcionarios.map((f) => (
+                  <option key={f.idFuncionario} value={f.idFuncionario}>
+                    #{f.idFuncionario} - {f.nome}
+                  </option>
+                ))}
+              </select>
               {erroIdFuncionario && <p className="text-xs text-danger mt-1">{erroIdFuncionario}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Motorista</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Motorista</label>
+              <select
                 value={idMotorista}
                 onChange={(e) => {
                   setIdMotorista(e.target.value);
-                  setErroIdMotorista('');
+                  if (erroIdMotorista) setErroIdMotorista('');
                 }}
-                onBlur={() => {
-                  const e = validarNumeroPositivo(idMotorista, 'ID Motorista');
-                  setErroIdMotorista(e || '');
-                }}
+                onBlur={() => setErroIdMotorista(validarCampoObrigatorio(idMotorista, 'Motorista') || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdMotorista ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione o motorista...</option>
+                {motoristas.map((m) => (
+                  <option key={m.idMotorista} value={m.idMotorista}>
+                    #{m.idMotorista} - {m.nome}
+                  </option>
+                ))}
+              </select>
               {erroIdMotorista && <p className="text-xs text-danger mt-1">{erroIdMotorista}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Veículo</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Veículo</label>
+              <select
                 value={idVeiculo}
                 onChange={(e) => {
                   setIdVeiculo(e.target.value);
-                  setErroIdVeiculo('');
+                  if (erroIdVeiculo) setErroIdVeiculo('');
                 }}
-                onBlur={() => {
-                  const e = validarNumeroPositivo(idVeiculo, 'ID Veículo');
-                  setErroIdVeiculo(e || '');
-                }}
+                onBlur={() => setErroIdVeiculo(validarCampoObrigatorio(idVeiculo, 'Veículo') || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroIdVeiculo ? 'border-danger' : 'border-border'}`}
-                placeholder="1"
-              />
+              >
+                <option value="">Selecione o veículo...</option>
+                {veiculos.map((v) => (
+                  <option key={v.idVeiculo} value={v.idVeiculo}>
+                    #{v.idVeiculo} - {v.placa} ({v.tipoVeiculo})
+                  </option>
+                ))}
+              </select>
               {erroIdVeiculo && <p className="text-xs text-danger mt-1">{erroIdVeiculo}</p>}
             </div>
           </div>
@@ -425,73 +460,85 @@ export default function RecebimentosPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <input
-                            type="number"
+                          <select
                             value={editIdNotaFiscal}
                             onChange={(e) => {
                               setEditIdNotaFiscal(e.target.value);
-                              setEditErroIdNotaFiscal('');
+                              if (editErroIdNotaFiscal) setEditErroIdNotaFiscal('');
                             }}
-                            onBlur={() => {
-                              const e = validarNumeroPositivo(editIdNotaFiscal, 'ID Nota Fiscal');
-                              setEditErroIdNotaFiscal(e || '');
-                            }}
+                            onBlur={() => setEditErroIdNotaFiscal(validarCampoObrigatorio(editIdNotaFiscal, 'Nota Fiscal') || '')}
                             className={`w-full border rounded px-2 py-1 text-xs ${editErroIdNotaFiscal ? 'border-danger' : 'border-border'}`}
-                          />
+                          >
+                            <option value="">Selecione...</option>
+                            {notasFiscais.map((n) => (
+                              <option key={n.idNotaFiscal} value={n.idNotaFiscal}>
+                                NF {n.numeroNf} - Série {n.serie} (#{n.idNotaFiscal})
+                              </option>
+                            ))}
+                          </select>
                           {editErroIdNotaFiscal && <p className="text-xs text-danger mt-1">{editErroIdNotaFiscal}</p>}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <input
-                            type="number"
+                          <select
                             value={editIdFuncionario}
                             onChange={(e) => {
                               setEditIdFuncionario(e.target.value);
-                              setEditErroIdFuncionario('');
+                              if (editErroIdFuncionario) setEditErroIdFuncionario('');
                             }}
-                            onBlur={() => {
-                              const e = validarNumeroPositivo(editIdFuncionario, 'ID Funcionário');
-                              setEditErroIdFuncionario(e || '');
-                            }}
+                            onBlur={() => setEditErroIdFuncionario(validarCampoObrigatorio(editIdFuncionario, 'Funcionário') || '')}
                             className={`w-full border rounded px-2 py-1 text-xs ${editErroIdFuncionario ? 'border-danger' : 'border-border'}`}
-                          />
+                          >
+                            <option value="">Selecione...</option>
+                            {funcionarios.map((f) => (
+                              <option key={f.idFuncionario} value={f.idFuncionario}>
+                                #{f.idFuncionario} - {f.nome}
+                              </option>
+                            ))}
+                          </select>
                           {editErroIdFuncionario && <p className="text-xs text-danger mt-1">{editErroIdFuncionario}</p>}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <input
-                            type="number"
+                          <select
                             value={editIdMotorista}
                             onChange={(e) => {
                               setEditIdMotorista(e.target.value);
-                              setEditErroIdMotorista('');
+                              if (editErroIdMotorista) setEditErroIdMotorista('');
                             }}
-                            onBlur={() => {
-                              const e = validarNumeroPositivo(editIdMotorista, 'ID Motorista');
-                              setEditErroIdMotorista(e || '');
-                            }}
+                            onBlur={() => setEditErroIdMotorista(validarCampoObrigatorio(editIdMotorista, 'Motorista') || '')}
                             className={`w-full border rounded px-2 py-1 text-xs ${editErroIdMotorista ? 'border-danger' : 'border-border'}`}
-                          />
+                          >
+                            <option value="">Selecione...</option>
+                            {motoristas.map((m) => (
+                              <option key={m.idMotorista} value={m.idMotorista}>
+                                #{m.idMotorista} - {m.nome}
+                              </option>
+                            ))}
+                          </select>
                           {editErroIdMotorista && <p className="text-xs text-danger mt-1">{editErroIdMotorista}</p>}
                         </div>
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <input
-                            type="number"
+                          <select
                             value={editIdVeiculo}
                             onChange={(e) => {
                               setEditIdVeiculo(e.target.value);
-                              setEditErroIdVeiculo('');
+                              if (editErroIdVeiculo) setEditErroIdVeiculo('');
                             }}
-                            onBlur={() => {
-                              const e = validarNumeroPositivo(editIdVeiculo, 'ID Veículo');
-                              setEditErroIdVeiculo(e || '');
-                            }}
+                            onBlur={() => setEditErroIdVeiculo(validarCampoObrigatorio(editIdVeiculo, 'Veículo') || '')}
                             className={`w-full border rounded px-2 py-1 text-xs ${editErroIdVeiculo ? 'border-danger' : 'border-border'}`}
-                          />
+                          >
+                            <option value="">Selecione...</option>
+                            {veiculos.map((v) => (
+                              <option key={v.idVeiculo} value={v.idVeiculo}>
+                                #{v.idVeiculo} - {v.placa} ({v.tipoVeiculo})
+                              </option>
+                            ))}
+                          </select>
                           {editErroIdVeiculo && <p className="text-xs text-danger mt-1">{editErroIdVeiculo}</p>}
                         </div>
                       </td>

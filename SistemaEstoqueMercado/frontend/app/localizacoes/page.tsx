@@ -6,6 +6,7 @@ import { localizacaoService } from '@/services/localizacaoService';
 import { Plus, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { formatCodigoPosicao } from '@/utils/masks';
+import { validarCodigoPosicao, validarCampoObrigatorio } from '@/utils/validators';
 
 export default function LocalizacoesPage() {
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
@@ -15,6 +16,9 @@ export default function LocalizacoesPage() {
   const [codigoPosicao, setCodigoPosicao] = useState('');
   const [tipoArmazenamento, setTipoArmazenamento] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+
+  const [erroCodigoPosicao, setErroCodigoPosicao] = useState('');
+  const [erroTipoArmazenamento, setErroTipoArmazenamento] = useState('');
 
   const buscarLocalizacoes = async () => {
     try {
@@ -56,20 +60,34 @@ export default function LocalizacoesPage() {
     };
   }, []);
 
-  const handleCadastrar = async (e: React.FormEvent) => {
+const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    const msgCodigo = validarCodigoPosicao(codigoPosicao);
+    const msgTipo = validarCampoObrigatorio(tipoArmazenamento, 'Tipo de armazenamento');
+    setErroCodigoPosicao(msgCodigo || '');
+    setErroTipoArmazenamento(msgTipo || '');
+    if (msgCodigo || msgTipo) return;
     try {
       await localizacaoService.cadastrar({ codigoPosicao, tipoArmazenamento });
       setCodigoPosicao('');
       setTipoArmazenamento('');
+      setErroCodigoPosicao('');
+      setErroTipoArmazenamento('');
       setMostrarForm(false);
       setCarregando(true);
       await buscarLocalizacoes();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        const msg = err.response.data.mensagem;
+        if (msg.toLowerCase().includes('código') || msg.toLowerCase().includes('codigo') || msg.toLowerCase().includes('posição')) {
+          setErroCodigoPosicao(msg);
+        } else if (msg.toLowerCase().includes('tipo') || msg.toLowerCase().includes('armazenamento')) {
+          setErroTipoArmazenamento(msg);
+        } else {
+          setErro(msg);
+        }
       } else {
-        alert('Erro ao cadastrar localização.');
+        setErro('Erro ao cadastrar localização.');
       }
     }
   };
@@ -112,17 +130,28 @@ export default function LocalizacoesPage() {
         <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-border bg-background p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground border-b pb-2">Cadastrar Localização</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+<div>
               <label className="block text-sm font-medium text-muted mb-1">Código da Posição</label>
               <input
                 type="text"
                 required
                 value={formatCodigoPosicao(codigoPosicao)}
-                onChange={(e) => setCodigoPosicao(formatCodigoPosicao(e.target.value))}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
+                onChange={(e) => {
+                  const formatado = formatCodigoPosicao(e.target.value);
+                  const contemInvalido = e.target.value !== e.target.value.replace(/[^A-Za-z0-9]/g, '');
+                  setCodigoPosicao(formatado);
+                  if (contemInvalido) {
+                    setErroCodigoPosicao('Digite apenas letras e números.');
+                  } else {
+                    setErroCodigoPosicao('');
+                  }
+                }}
+                onBlur={() => setErroCodigoPosicao(validarCodigoPosicao(codigoPosicao) || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none ${erroCodigoPosicao ? 'border-danger' : 'border-border'}`}
                 placeholder="A-01-02"
                 maxLength={8}
               />
+              {erroCodigoPosicao && <p className="text-xs text-danger mt-1">{erroCodigoPosicao}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Tipo de Armazenamento</label>
@@ -130,10 +159,15 @@ export default function LocalizacoesPage() {
                 type="text"
                 required
                 value={tipoArmazenamento}
-                onChange={(e) => setTipoArmazenamento(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
+                onChange={(e) => {
+                  setTipoArmazenamento(e.target.value);
+                  if (erroTipoArmazenamento) setErroTipoArmazenamento('');
+                }}
+                onBlur={() => setErroTipoArmazenamento(validarCampoObrigatorio(tipoArmazenamento, 'Tipo de armazenamento') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none ${erroTipoArmazenamento ? 'border-danger' : 'border-border'}`}
                 placeholder="Prateleira / Pallet"
               />
+              {erroTipoArmazenamento && <p className="text-xs text-danger mt-1">{erroTipoArmazenamento}</p>}
             </div>
           </div>
           <div className="flex justify-end pt-2">

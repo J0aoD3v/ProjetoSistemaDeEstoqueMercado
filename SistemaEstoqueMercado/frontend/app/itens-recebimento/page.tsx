@@ -1,73 +1,145 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ItemRecebimento } from '@/types';
+import { useEffect, useState, useCallback } from 'react';
+import { ItemRecebimento, Recebimento, Localizacao, Lote } from '@/types';
 import { itemRecebimentoService } from '@/services/itemRecebimentoService';
+import { recebimentoService } from '@/services/recebimentoService';
+import { localizacaoService } from '@/services/localizacaoService';
+import { loteService } from '@/services/loteService';
 import { Plus, Trash2, Calculator, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { useProductSearch } from '@/hooks/useProductSearch';
+import { apenasNumerosDecimal } from '@/utils/masks';
+import { validarCampoObrigatorio, validarNumeroPositivo } from '@/utils/validators';
 
 export default function ItensRecebimentoPage() {
   const [itens, setItens] = useState<ItemRecebimento[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erroGeral, setErroGeral] = useState('');
 
   const [quantidadeDeclarada, setQuantidadeDeclarada] = useState('');
   const [quantidadeConferida, setQuantidadeConferida] = useState('');
   const [idRecebimento, setIdRecebimento] = useState('');
+  const [idLote, setIdLote] = useState('');
   const [idLocalizacao, setIdLocalizacao] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  const produtoSearch = useProductSearch({
-    onSelect: (p) => {
-      setIdLote(String(p.idProduto ?? ''));
-    },
-  });
+  const [erroQuantidadeDeclarada, setErroQuantidadeDeclarada] = useState('');
+  const [erroQuantidadeConferida, setErroQuantidadeConferida] = useState('');
+  const [erroIdRecebimento, setErroIdRecebimento] = useState('');
+  const [erroIdLote, setErroIdLote] = useState('');
+  const [erroIdLocalizacao, setErroIdLocalizacao] = useState('');
 
-  const [idLote, setIdLote] = useState('');
+  const [recebimentos, setRecebimentos] = useState<Recebimento[]>([]);
+  const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
+  const [lotes, setLotes] = useState<Lote[]>([]);
 
-  const buscarItens = async () => {
+  const limparErros = () => {
+    setErroQuantidadeDeclarada('');
+    setErroQuantidadeConferida('');
+    setErroIdRecebimento('');
+    setErroIdLote('');
+    setErroIdLocalizacao('');
+  };
+
+  const buscarItens = useCallback(async () => {
     try {
       const data = await itemRecebimentoService.listarTodos();
       setItens(data);
-      setErro('');
+      setErroGeral('');
     } catch {
-      setErro('Não foi possível carregar a lista de itens de recebimento.');
+      setErroGeral('Não foi possível carregar a lista de itens de recebimento.');
     } finally {
       setCarregando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    void (async () => {
+      await buscarItens();
+    })();
+  }, [buscarItens]);
 
-    const carregarInicial = async () => {
-      try {
-        const data = await itemRecebimentoService.listarTodos();
-        if (isMounted) {
-          setItens(data);
-          setErro('');
-        }
-      } catch {
-        if (isMounted) {
-          setErro('Não foi possível carregar a lista de itens de recebimento.');
-        }
-      } finally {
-        if (isMounted) {
-          setCarregando(false);
-        }
-      }
-    };
-
-    carregarInicial();
-
-    return () => {
-      isMounted = false;
-    };
+  const carregarOpcoes = useCallback(async () => {
+    try {
+      const [recs, locs, lots] = await Promise.all([
+        recebimentoService.listarTodos(),
+        localizacaoService.listarTodos(),
+        loteService.listarTodos(),
+      ]);
+      setRecebimentos(recs);
+      setLocalizacoes(locs);
+      setLotes(lots);
+    } catch {
+      setRecebimentos([]);
+      setLocalizacoes([]);
+      setLotes([]);
+    }
   }, []);
+
+  useEffect(() => {
+    void (async () => {
+      await carregarOpcoes();
+    })();
+  }, [carregarOpcoes]);
+
+  const validarFormulario = (): boolean => {
+    limparErros();
+    let valido = true;
+
+    const eQtdD = validarNumeroPositivo(quantidadeDeclarada, 'Quantidade declarada');
+    if (eQtdD) {
+      setErroQuantidadeDeclarada(eQtdD);
+      valido = false;
+    }
+
+    const eQtdC = validarNumeroPositivo(quantidadeConferida, 'Quantidade conferida');
+    if (eQtdC) {
+      setErroQuantidadeConferida(eQtdC);
+      valido = false;
+    }
+
+    const eRece = validarCampoObrigatorio(idRecebimento, 'Recebimento');
+    if (eRece) {
+      setErroIdRecebimento(eRece);
+      valido = false;
+    }
+
+    const eLote = validarCampoObrigatorio(idLote, 'Lote');
+    if (eLote) {
+      setErroIdLote(eLote);
+      valido = false;
+    }
+
+    const eLoc = validarCampoObrigatorio(idLocalizacao, 'Localização');
+    if (eLoc) {
+      setErroIdLocalizacao(eLoc);
+      valido = false;
+    }
+
+    return valido;
+  };
+
+  const mapearErroBackend = (mensagem: string) => {
+    const msg = mensagem.toLowerCase();
+    limparErros();
+    if (msg.includes('declarada')) {
+      setErroQuantidadeDeclarada(mensagem);
+    } else if (msg.includes('conferida')) {
+      setErroQuantidadeConferida(mensagem);
+    } else if (msg.includes('recebimento')) {
+      setErroIdRecebimento(mensagem);
+    } else if (msg.includes('lote')) {
+      setErroIdLote(mensagem);
+    } else if (msg.includes('localiza')) {
+      setErroIdLocalizacao(mensagem);
+    } else {
+      setErroGeral(mensagem);
+    }
+  };
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validarFormulario()) return;
     try {
       await itemRecebimentoService.cadastrar({
         quantidadeDeclarada: parseFloat(quantidadeDeclarada),
@@ -81,15 +153,17 @@ export default function ItensRecebimentoPage() {
       setIdRecebimento('');
       setIdLote('');
       setIdLocalizacao('');
-      produtoSearch.setTermo('');
       setMostrarForm(false);
+      limparErros();
       setCarregando(true);
       await buscarItens();
     } catch (err) {
+      limparErros();
+      setErroGeral('');
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
-        alert(err.response.data.mensagem);
+        mapearErroBackend(err.response.data.mensagem);
       } else {
-        alert('Erro ao cadastrar item de recebimento.');
+        setErroGeral('Erro ao cadastrar item de recebimento.');
       }
     }
   };
@@ -101,15 +175,12 @@ export default function ItensRecebimentoPage() {
       setCarregando(true);
       await buscarItens();
     } catch {
-      alert('Erro ao excluir item.');
+      setErroGeral('Erro ao excluir item.');
     }
   };
 
   const handleCalcularDivergencia = async () => {
-    if (!quantidadeDeclarada || !quantidadeConferida || !idLote) {
-      alert('Preencha Quantidade Declarada, Quantidade Conferida e ID do Lote para calcular.');
-      return;
-    }
+    if (!validarFormulario()) return;
     try {
       const valor = await itemRecebimentoService.calcularDivergencia({
         quantidadeDeclarada: parseFloat(quantidadeDeclarada),
@@ -120,8 +191,23 @@ export default function ItensRecebimentoPage() {
       });
       alert(`Divergência calculada: ${valor}`);
     } catch {
-      alert('Erro ao calcular divergência.');
+      setErroGeral('Erro ao calcular divergência.');
     }
+  };
+
+  const atuaNumero = (
+    raw: string,
+    setValor: (v: string) => void,
+    setErro: (m: string) => void,
+    limpoAtual: string
+  ) => {
+    const limpo = apenasNumerosDecimal(raw);
+    if (raw !== limpo) {
+      setErro('Digite apenas números.');
+    } else if (limpoAtual) {
+      setErro('');
+    }
+    setValor(limpo);
   };
 
   return (
@@ -132,7 +218,10 @@ export default function ItensRecebimentoPage() {
           <p className="mt-1 text-base text-muted">Gestão dos itens conferidos no recebimento</p>
         </div>
         <button
-          onClick={() => setMostrarForm(!mostrarForm)}
+          onClick={() => {
+            setMostrarForm(!mostrarForm);
+            if (mostrarForm) limparErros();
+          }}
           className="flex items-center justify-center gap-2 rounded-lg bg-info px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-info-hover"
         >
           <Plus className="w-4 h-4" />
@@ -140,10 +229,10 @@ export default function ItensRecebimentoPage() {
         </button>
       </div>
 
-      {erro && (
+      {erroGeral && (
         <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
-          {erro}
+          {erroGeral}
         </div>
       )}
 
@@ -154,78 +243,90 @@ export default function ItensRecebimentoPage() {
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Qtd. Declarada</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={quantidadeDeclarada}
-                onChange={(e) => setQuantidadeDeclarada(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => atuaNumero(e.target.value, setQuantidadeDeclarada, setErroQuantidadeDeclarada, erroQuantidadeDeclarada)}
+                onBlur={() => setErroQuantidadeDeclarada(validarNumeroPositivo(quantidadeDeclarada, 'Quantidade declarada') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroQuantidadeDeclarada ? 'border-danger' : 'border-border'}`}
                 placeholder="0"
               />
+              {erroQuantidadeDeclarada && <p className="text-xs text-danger mt-1">{erroQuantidadeDeclarada}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">Qtd. Conferida</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={quantidadeConferida}
-                onChange={(e) => setQuantidadeConferida(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
+                onChange={(e) => atuaNumero(e.target.value, setQuantidadeConferida, setErroQuantidadeConferida, erroQuantidadeConferida)}
+                onBlur={() => setErroQuantidadeConferida(validarNumeroPositivo(quantidadeConferida, 'Quantidade conferida') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroQuantidadeConferida ? 'border-danger' : 'border-border'}`}
                 placeholder="0"
               />
+              {erroQuantidadeConferida && <p className="text-xs text-danger mt-1">{erroQuantidadeConferida}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Recebimento</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Recebimento</label>
+              <select
                 value={idRecebimento}
-                onChange={(e) => setIdRecebimento(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
-                placeholder="1"
-              />
-            </div>
-            <div className="relative">
-              <label className="block text-sm font-medium text-muted mb-1">Produto / Lote</label>
-              <input
-                type="text"
-                required
-                value={produtoSearch.termo}
-                onChange={(e) => produtoSearch.setTermo(e.target.value)}
-                onBlur={() => setTimeout(produtoSearch.fechar, 150)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
-                placeholder="Buscar produto por SKU, código ou descrição..."
-              />
-              {produtoSearch.aberto && (
-                <ul className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
-                  {produtoSearch.carregando ? (
-                    <li className="p-3 text-sm text-muted">Carregando...</li>
-                  ) : (
-                    produtoSearch.sugestoes.map((p) => (
-                      <li
-                        key={p.idProduto}
-                        onMouseDown={() => produtoSearch.selecionar(p)}
-                        className="cursor-pointer px-3 py-2 text-sm hover:bg-surface-hover"
-                      >
-                        <span className="font-medium text-foreground">{p.sku}</span>
-                        <span className="text-muted"> - {p.descricao}</span>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              )}
+                onChange={(e) => {
+                  setIdRecebimento(e.target.value);
+                  if (erroIdRecebimento) setErroIdRecebimento('');
+                }}
+                onBlur={() => setErroIdRecebimento(validarCampoObrigatorio(idRecebimento, 'Recebimento') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroIdRecebimento ? 'border-danger' : 'border-border'}`}
+              >
+                <option value="">Selecione o recebimento...</option>
+                {recebimentos.map((r) => (
+                  <option key={r.idRecebimento} value={r.idRecebimento}>
+                    #{r.idRecebimento} - {r.statusRecebimento}
+                  </option>
+                ))}
+              </select>
+              {erroIdRecebimento && <p className="text-xs text-danger mt-1">{erroIdRecebimento}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Localização</label>
-              <input
-                type="number"
-                required
+              <label className="block text-sm font-medium text-muted mb-1">Lote</label>
+              <select
+                value={idLote}
+                onChange={(e) => {
+                  setIdLote(e.target.value);
+                  if (erroIdLote) setErroIdLote('');
+                }}
+                onBlur={() => setErroIdLote(validarCampoObrigatorio(idLote, 'Lote') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroIdLote ? 'border-danger' : 'border-border'}`}
+              >
+                <option value="">Selecione o lote...</option>
+                {lotes.map((l) => (
+                  <option key={l.idLote} value={l.idLote}>
+                    {l.numeroLote} (#{l.idLote} - Produto {l.idProduto})
+                  </option>
+                ))}
+              </select>
+              {erroIdLote && <p className="text-xs text-danger mt-1">{erroIdLote}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted mb-1">Localização</label>
+              <select
                 value={idLocalizacao}
-                onChange={(e) => setIdLocalizacao(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
-                placeholder="1"
-              />
+                onChange={(e) => {
+                  setIdLocalizacao(e.target.value);
+                  if (erroIdLocalizacao) setErroIdLocalizacao('');
+                }}
+                onBlur={() => setErroIdLocalizacao(validarCampoObrigatorio(idLocalizacao, 'Localização') || '')}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroIdLocalizacao ? 'border-danger' : 'border-border'}`}
+              >
+                <option value="">Selecione a localização...</option>
+                {localizacoes.map((l) => (
+                  <option key={l.idLocalizacao} value={l.idLocalizacao}>
+                    {l.codigoPosicao} (#{l.idLocalizacao})
+                  </option>
+                ))}
+              </select>
+              {erroIdLocalizacao && <p className="text-xs text-danger mt-1">{erroIdLocalizacao}</p>}
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -287,12 +388,3 @@ export default function ItensRecebimentoPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

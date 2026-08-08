@@ -76,9 +76,32 @@ export function validarCampoObrigatorio(valor: string, nomeCampo: string): strin
   return null;
 }
 
+function normalizarNumero(valor: string): string {
+  return valor
+    .trim()
+    .replace(/\.(?=\d{3}(,|$))/g, '')
+    .replace(',', '.');
+}
+
 export function validarNumeroPositivo(valor: string, nomeCampo: string): string | null {
-  if (!valor.trim()) return `${nomeCampo} é obrigatório.`;
-  const num = Number(valor);
-  if (isNaN(num) || num <= 0) return `${nomeCampo} deve ser um número maior que zero.`;
+  const limpo = valor.trim();
+  if (limpo.length === 0) return `${nomeCampo} é obrigatório.`;
+  const normalizado = normalizarNumero(limpo);
+  if (!/^\d+(\.\d+)?$/.test(normalizado)) return `${nomeCampo} deve conter apenas números.`;
+  const num = Number(normalizado);
+  if (num <= 0) return `${nomeCampo} deve ser um número maior que zero.`;
+  return null;
+}
+
+export function validarNumeroObrigatorio(valor: string, nomeCampo: string): string | null {
+  const limpo = valor.trim();
+  if (limpo.length === 0) return `${nomeCampo} é obrigatório.`;
+  const normalizado = normalizarNumero(limpo);
+  if (!/^\d+(\.\d+)?$/.test(normalizado)) return `${nomeCampo} deve conter apenas números.`;
+  return null;
+}
+
+export function aplicouTipoErrado(valor: string, substituido: string, tipo: 'número' | 'letras'): string | null {
+  if (valor !== substituido) return `Digite apenas ${tipo === 'número' ? 'números' : 'letras'}.`;
   return null;
 }

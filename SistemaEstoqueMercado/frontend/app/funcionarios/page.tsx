@@ -193,7 +193,7 @@ export default function FuncionariosPage() {
                 value={formatMatricula(matricula)}
                 onChange={(e) => {
                   setMatricula(formatMatricula(e.target.value));
-                  setErroMatricula('');
+                  setErroMatricula(/[^A-Za-z0-9-]/.test(e.target.value) ? 'Digite apenas letras e números.' : '');
                 }}
                 onBlur={() => setErroMatricula(validarMatricula(matricula) ?? '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none ${erroMatricula ? 'border-danger' : 'border-border'}`}
@@ -273,7 +273,7 @@ export default function FuncionariosPage() {
                           value={editMatricula}
                           onChange={(e) => {
                             setEditMatricula(e.target.value);
-                            setEditErroMatricula('');
+                            setEditErroMatricula(/[^A-Za-z0-9-]/.test(e.target.value) ? 'Digite apenas letras e números.' : '');
                           }}
                           onBlur={() => setEditErroMatricula(validarMatricula(editMatricula) ?? '')}
                           className={`w-full border rounded px-2 py-1 text-sm ${editErroMatricula ? 'border-danger' : 'border-border'}`}

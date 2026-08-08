@@ -190,7 +190,10 @@ export default function MotoristasPage() {
                 type="text"
                 required
                 value={formatCPF(cpf)}
-                onChange={(e) => { setCpf(formatCPF(e.target.value)); setErroCpf(''); }}
+                onChange={(e) => {
+                  setCpf(formatCPF(e.target.value));
+                  setErroCpf(/[^\d.-]/.test(e.target.value) ? 'Digite apenas números.' : '');
+                }}
                 onBlur={() => handleBlurCpf(cpf, setErroCpf)}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroCpf ? 'border-danger focus:ring-danger' : 'border-border focus:ring-accent'}`}
                 placeholder="000.000.000-00"
@@ -262,8 +265,11 @@ export default function MotoristasPage() {
                         <input
                           type="text"
                           value={formatCPF(editCpf)}
-                          onChange={(e) => { setEditCpf(formatCPF(e.target.value)); setEditErroCpf(''); }}
-                          onBlur={() => handleBlurCpf(editCpf, setEditErroCpf)}
+onChange={(e) => {
+                          setEditCpf(formatCPF(e.target.value));
+                          setEditErroCpf(/[^\d.-]/.test(e.target.value) ? 'Digite apenas números.' : '');
+                        }}
+                        onBlur={() => handleBlurCpf(editCpf, setEditErroCpf)}
                           className={`w-full border rounded px-2 py-1 text-xs ${editErroCpf ? 'border-danger' : 'border-border'}`}
                         />
                         {editErroCpf && <p className="text-xs text-danger mt-1">{editErroCpf}</p>}

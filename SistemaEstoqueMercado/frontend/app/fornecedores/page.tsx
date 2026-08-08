@@ -168,7 +168,10 @@ export default function FornecedoresPage() {
                 type="text"
                 required
                 value={formatCNPJ(cnpj)}
-                onChange={(e) => { setCnpj(formatCNPJ(e.target.value)); setErroCnpj(''); }}
+                onChange={(e) => {
+                  setCnpj(formatCNPJ(e.target.value));
+                  setErroCnpj(/[^\d./-]/.test(e.target.value) ? 'Digite apenas números.' : '');
+                }}
                 onBlur={() => setErroCnpj(validarCNPJ(cnpj) || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${erroCnpj ? 'border-danger focus:ring-danger' : 'border-border focus:ring-info'}`}
                 placeholder="00.000.000/0001-00"
@@ -236,8 +239,11 @@ export default function FornecedoresPage() {
                         <input
                           type="text"
                           value={formatCNPJ(editCnpj)}
-                          onChange={(e) => { setEditCnpj(formatCNPJ(e.target.value)); setEditErroCnpj(''); }}
-                          onBlur={() => setEditErroCnpj(validarCNPJ(editCnpj) || '')}
+onChange={(e) => {
+                          setEditCnpj(formatCNPJ(e.target.value));
+                          setEditErroCnpj(/[^\d./-]/.test(e.target.value) ? 'Digite apenas números.' : '');
+                        }}
+                        onBlur={() => setEditErroCnpj(validarCNPJ(editCnpj) || '')}
                           className={`w-full border rounded px-2 py-1 text-sm ${editErroCnpj ? 'border-danger' : 'border-border'}`}
                         />
                         {editErroCnpj && <p className="text-xs text-danger mt-1">{editErroCnpj}</p>}

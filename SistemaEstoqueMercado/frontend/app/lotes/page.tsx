@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Lote } from '@/types';
+import { Lote, Produto } from '@/types';
 import { loteService } from '@/services/loteService';
+import { produtoService } from '@/services/produtoService';
 import { Plus, Trash2, Edit, Package, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
 import { useProductSearch } from '@/hooks/useProductSearch';
@@ -31,6 +32,8 @@ export default function LotesPage() {
 
   const [idProduto, setIdProduto] = useState<number | ''>('');
   const [editIdProduto, setEditIdProduto] = useState<number | ''>('');
+
+  const [produtos, setProdutos] = useState<Produto[]>([]);
 
   const [erroNumeroLote, setErroNumeroLote] = useState('');
   const [erroDataFabricacao, setErroDataFabricacao] = useState('');
@@ -104,6 +107,10 @@ export default function LotesPage() {
       await carregarLotes();
     })();
   }, [carregarLotes]);
+
+  useEffect(() => {
+    produtoService.listarTodos().then(setProdutos).catch(() => setProdutos([]));
+  }, []);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,8 +279,9 @@ export default function LotesPage() {
                 required
                 value={numeroLote}
                 onChange={(e) => {
-                  setNumeroLote(e.target.value);
-                  setErroNumeroLote('');
+                  const raw = e.target.value;
+                  setNumeroLote(raw.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
+                  setErroNumeroLote(/[^A-Za-z0-9-]/.test(raw) ? 'Digite apenas letras, números e hífen.' : '');
                 }}
                 onBlur={() => setErroNumeroLote(validarNumeroLote(numeroLote) || '')}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none ${erroNumeroLote ? 'border-danger' : 'border-border'}`}
@@ -388,10 +396,11 @@ export default function LotesPage() {
                           type="text"
                           value={editNumeroLote}
                           onChange={(e) => {
-                            setEditNumeroLote(e.target.value);
-                            setEditErroNumeroLote('');
-                          }}
-                          onBlur={() => setEditErroNumeroLote(validarNumeroLote(editNumeroLote) || '')}
+                          const raw = e.target.value;
+                          setEditNumeroLote(raw.toUpperCase().replace(/[^A-Z0-9-]/g, ''));
+                          setEditErroNumeroLote(/[^A-Za-z0-9-]/.test(raw) ? 'Digite apenas letras, números e hífen.' : '');
+                        }}
+                        onBlur={() => setEditErroNumeroLote(validarNumeroLote(editNumeroLote) || '')}
                           className={`w-full border rounded px-2 py-1 text-xs ${editErroNumeroLote ? 'border-danger' : 'border-border'}`}
                         />
                         {editErroNumeroLote && <p className="text-xs text-danger mt-1">{editErroNumeroLote}</p>}
@@ -422,17 +431,23 @@ export default function LotesPage() {
                         />
                         {editErroDataValidade && <p className="text-xs text-danger mt-1">{editErroDataValidade}</p>}
                       </td>
-                      <td className="p-4">
-                        <input
-                          type="number"
-                          value={editIdProduto}
+<td className="p-4">
+                        <select
+                          value={editIdProduto === '' ? '' : String(editIdProduto)}
                           onChange={(e) => {
                             setEditIdProduto(e.target.value === '' ? '' : Number(e.target.value));
-                            setEditErroIdProduto('');
+                            if (editErroIdProduto) setEditErroIdProduto('');
                           }}
-                          onBlur={() => setEditErroIdProduto(validarNumeroPositivo(String(editIdProduto), 'ID do Produto') || '')}
-                          className={`w-full border rounded px-2 py-1 text-xs ${editErroIdProduto ? 'border-danger' : 'border-border'}`}
-                        />
+                          onBlur={() => setEditErroIdProduto(validarCampoObrigatorio(String(editIdProduto), 'Produto') || '')}
+                          className={`w-full border rounded px-2 py-1 text-xs ${editErroIdProduto ? 'border-red-500' : 'border-border'}`}
+                        >
+                          <option value="">Selecione o produto...</option>
+                          {produtos.map((p) => (
+                            <option key={p.idProduto} value={p.idProduto}>
+                              {p.sku} - {p.descricao} (#{p.idProduto})
+                            </option>
+                          ))}
+                        </select>
                         {editErroIdProduto && <p className="text-xs text-danger mt-1">{editErroIdProduto}</p>}
                       </td>
                       <td className="p-4 text-right">
