@@ -18,11 +18,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body 
-        className={`${inter.className} flex bg-slate-100 min-h-screen text-slate-900`}
+        className={`${inter.className} flex min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100`}
         suppressHydrationWarning
       >
         <Sidebar />
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </body>
     </html>
   );

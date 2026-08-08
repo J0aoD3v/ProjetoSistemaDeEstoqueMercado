@@ -16,7 +16,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen p-4 flex flex-col">
+    <aside className="w-64 shrink-0 bg-slate-950 text-white min-h-screen p-4 flex flex-col border-r border-slate-800">
       <div className="text-xl font-bold mb-8 px-4 text-emerald-400 border-b border-slate-800 pb-4">
         Estoque Mercado
       </div>
@@ -31,7 +31,7 @@ export default function Sidebar() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-emerald-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  : 'text-slate-200 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <Icon className="w-5 h-5" />
