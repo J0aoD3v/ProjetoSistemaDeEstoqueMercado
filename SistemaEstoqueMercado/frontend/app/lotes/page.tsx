@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Lote } from '@/types';
 import { loteService } from '@/services/loteService';
-import { Plus, Trash2, Package, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Package, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
 
 export default function LotesPage() {
@@ -11,15 +11,21 @@ export default function LotesPage() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
-  // Formulário
   const [numeroLote, setNumeroLote] = useState('');
   const [dataFabricacao, setDataFabricacao] = useState('');
   const [dataValidade, setDataValidade] = useState('');
   const [idProduto, setIdProduto] = useState<number | ''>('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  const buscarLotes = async () => {
+  const [editNumeroLote, setEditNumeroLote] = useState('');
+  const [editDataFabricacao, setEditDataFabricacao] = useState('');
+  const [editDataValidade, setEditDataValidade] = useState('');
+  const [editIdProduto, setEditIdProduto] = useState<number | ''>('');
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+
+  const carregarLotes = useCallback(async () => {
     try {
+      setCarregando(true);
       const data = await loteService.listarTodos();
       setLotes(data);
       setErro('');
@@ -28,35 +34,13 @@ export default function LotesPage() {
     } finally {
       setCarregando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const carregarInicial = async () => {
-      try {
-        const data = await loteService.listarTodos();
-        if (isMounted) {
-          setLotes(data);
-          setErro('');
-        }
-      } catch {
-        if (isMounted) {
-          setErro('Não foi possível carregar a lista de lotes.');
-        }
-      } finally {
-        if (isMounted) {
-          setCarregando(false);
-        }
-      }
-    };
-
-    carregarInicial();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void (async () => {
+      await carregarLotes();
+    })();
+  }, [carregarLotes]);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +55,7 @@ export default function LotesPage() {
       setDataValidade('');
       setIdProduto('');
       setMostrarForm(false);
-      setCarregando(true);
-      await buscarLotes();
+      await carregarLotes();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
         alert(err.response.data.mensagem);
@@ -86,10 +69,44 @@ export default function LotesPage() {
     if (!id || !confirm('Deseja excluir este lote?')) return;
     try {
       await loteService.excluir(id);
-      setCarregando(true);
-      await buscarLotes();
+      await carregarLotes();
     } catch {
       alert('Erro ao excluir lote.');
+    }
+  };
+
+  const iniciarEdicao = (l: Lote) => {
+    setEditandoId(l.idLote ?? null);
+    setEditNumeroLote(l.numeroLote);
+    setEditDataFabricacao(l.dataFabricacao);
+    setEditDataValidade(l.dataValidade);
+    setEditIdProduto(l.idProduto);
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditNumeroLote('');
+    setEditDataFabricacao('');
+    setEditDataValidade('');
+    setEditIdProduto('');
+  };
+
+  const salvarEdicao = async (id: number) => {
+    try {
+      await loteService.atualizar(id, {
+        numeroLote: editNumeroLote,
+        dataFabricacao: editDataFabricacao,
+        dataValidade: editDataValidade,
+        idProduto: Number(editIdProduto),
+      });
+      cancelarEdicao();
+      await carregarLotes();
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
+        alert(err.response.data.mensagem);
+      } else {
+        alert('Erro ao atualizar lote.');
+      }
     }
   };
 
@@ -97,12 +114,12 @@ export default function LotesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Lotes</h1>
-          <p className="mt-1 text-base text-slate-600 dark:text-slate-300">Gestão dos lotes de produtos</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Lotes</h1>
+          <p className="mt-1 text-base text-muted">Gestão dos lotes de produtos</p>
         </div>
         <button
           onClick={() => setMostrarForm(!mostrarForm)}
-          className="flex items-center justify-center gap-2 rounded-lg bg-amber-700 px-4 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-amber-800"
+          className="flex items-center justify-center gap-2 rounded-lg bg-warning px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-warning-hover"
         >
           <Plus className="w-4 h-4" />
           {mostrarForm ? 'Fechar Formulário' : 'Novo Lote'}
@@ -110,78 +127,78 @@ export default function LotesPage() {
       </div>
 
       {erro && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 font-medium text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
+        <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
           {erro}
         </div>
       )}
 
       {mostrarForm && (
-        <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-700 border-b pb-2">Cadastrar Lote</h2>
+        <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-border bg-background p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground border-b pb-2">Cadastrar Lote</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Número do Lote</label>
+              <label className="block text-sm font-medium text-muted mb-1">Número do Lote</label>
               <input
                 type="text"
                 required
                 value={numeroLote}
                 onChange={(e) => setNumeroLote(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
                 placeholder="LOTE-001"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Data Fabricação</label>
+              <label className="block text-sm font-medium text-muted mb-1">Data Fabricação</label>
               <input
                 type="date"
                 required
                 value={dataFabricacao}
                 onChange={(e) => setDataFabricacao(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Data Validade</label>
+              <label className="block text-sm font-medium text-muted mb-1">Data Validade</label>
               <input
                 type="date"
                 required
                 value={dataValidade}
                 onChange={(e) => setDataValidade(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">ID do Produto</label>
+              <label className="block text-sm font-medium text-muted mb-1">ID do Produto</label>
               <input
                 type="number"
                 required
                 value={idProduto}
                 onChange={(e) => setIdProduto(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
                 placeholder="1"
               />
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium text-sm">
+            <button type="submit" className="bg-warning hover:bg-warning-hover text-foreground px-6 py-2 rounded-lg font-medium text-sm">
               Salvar
             </button>
           </div>
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-border bg-background">
         {carregando ? (
-          <div className="p-8 text-center text-slate-500">Carregando lotes...</div>
+          <div className="p-8 text-center text-muted">Carregando lotes...</div>
         ) : lotes.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
-            <Package className="w-10 h-10 text-slate-400" />
+          <div className="p-8 text-center text-muted flex flex-col items-center gap-2">
+            <Package className="w-10 h-10 text-muted" />
             Nenhum lote cadastrado.
           </div>
         ) : (
-          <table className="w-full min-w-200 border-collapse text-left text-base">
-            <thead className="border-b border-slate-200 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <table className="w-full min-w-175 border-collapse text-left text-base">
+            <thead className="border-b border-border bg-surface text-xs font-bold uppercase tracking-wider text-foreground">
               <tr>
                 <th className="p-4">ID</th>
                 <th className="p-4">Nº Lote</th>
@@ -191,19 +208,70 @@ export default function LotesPage() {
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <tbody className="divide-y divide-border">
               {lotes.map((l) => (
-                <tr key={l.idLote} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
-                  <td className="p-4 font-mono text-slate-500">#{l.idLote}</td>
-                  <td className="p-4 font-mono text-slate-800">{l.numeroLote}</td>
-                  <td className="p-4 text-slate-600">{new Date(l.dataFabricacao).toLocaleDateString()}</td>
-                  <td className="p-4 text-slate-600">{new Date(l.dataValidade).toLocaleDateString()}</td>
-                  <td className="p-4 text-slate-600">#{l.idProduto}</td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => handleExcluir(l.idLote)} className="text-slate-400 hover:text-rose-600 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                <tr key={l.idLote} className="transition-colors hover:bg-surface-hover">
+                  {editandoId === l.idLote ? (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{l.idLote}</td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editNumeroLote}
+                          onChange={(e) => setEditNumeroLote(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="date"
+                          value={editDataFabricacao}
+                          onChange={(e) => setEditDataFabricacao(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="date"
+                          value={editDataValidade}
+                          onChange={(e) => setEditDataValidade(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="number"
+                          value={editIdProduto}
+                          onChange={(e) => setEditIdProduto(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full border border-border rounded px-2 py-1 text-xs"
+                        />
+                      </td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => salvarEdicao(l.idLote!)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={cancelarEdicao} className="text-muted p-1">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{l.idLote}</td>
+                      <td className="p-4 font-mono text-foreground">{l.numeroLote}</td>
+                      <td className="p-4 text-muted">{new Date(l.dataFabricacao).toLocaleDateString()}</td>
+                      <td className="p-4 text-muted">{new Date(l.dataValidade).toLocaleDateString()}</td>
+                      <td className="p-4 text-muted">#{l.idProduto}</td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => iniciarEdicao(l)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleExcluir(l.idLote)} className="text-muted hover:text-danger p-1">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -213,3 +281,12 @@ export default function LotesPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

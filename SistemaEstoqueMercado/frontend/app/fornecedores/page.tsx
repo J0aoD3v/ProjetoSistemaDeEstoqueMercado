@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Fornecedor } from '@/types';
 import { fornecedorService } from '@/services/fornecedorService';
-import { Plus, Trash2, Users, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
 
 export default function FornecedoresPage() {
@@ -11,13 +11,17 @@ export default function FornecedoresPage() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
-  // Formulário
   const [cnpj, setCnpj] = useState('');
   const [razaoSocial, setRazaoSocial] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
-  const buscarFornecedores = async () => {
+  const [editCnpj, setEditCnpj] = useState('');
+  const [editRazaoSocial, setEditRazaoSocial] = useState('');
+  const [editNomeFantasia, setEditNomeFantasia] = useState('');
+
+  const carregarFornecedores = useCallback(async () => {
     try {
       const data = await fornecedorService.listarTodos();
       setFornecedores(data);
@@ -27,35 +31,13 @@ export default function FornecedoresPage() {
     } finally {
       setCarregando(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const carregarInicial = async () => {
-      try {
-        const data = await fornecedorService.listarTodos();
-        if (isMounted) {
-          setFornecedores(data);
-          setErro('');
-        }
-      } catch {
-        if (isMounted) {
-          setErro('Não foi possível carregar a lista de fornecedores.');
-        }
-      } finally {
-        if (isMounted) {
-          setCarregando(false);
-        }
-      }
-    };
-
-    carregarInicial();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void (async () => {
+      await carregarFornecedores();
+    })();
+  }, [carregarFornecedores]);
 
   const handleCadastrar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +47,7 @@ export default function FornecedoresPage() {
       setRazaoSocial('');
       setNomeFantasia('');
       setMostrarForm(false);
-      setCarregando(true);
-      await buscarFornecedores();
+      await carregarFornecedores();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
         alert(err.response.data.mensagem);
@@ -80,10 +61,41 @@ export default function FornecedoresPage() {
     if (!id || !confirm('Deseja excluir este fornecedor?')) return;
     try {
       await fornecedorService.excluir(id);
-      setCarregando(true);
-      await buscarFornecedores();
+      await carregarFornecedores();
     } catch {
       alert('Erro ao excluir fornecedor.');
+    }
+  };
+
+  const iniciarEdicao = (f: Fornecedor) => {
+    setEditandoId(f.idFornecedor ?? null);
+    setEditCnpj(f.cnpj);
+    setEditRazaoSocial(f.razaoSocial);
+    setEditNomeFantasia(f.nomeFantasia);
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditCnpj('');
+    setEditRazaoSocial('');
+    setEditNomeFantasia('');
+  };
+
+  const salvarEdicao = async (id: number) => {
+    try {
+      await fornecedorService.atualizar(id, {
+        cnpj: editCnpj,
+        razaoSocial: editRazaoSocial,
+        nomeFantasia: editNomeFantasia,
+      });
+      cancelarEdicao();
+      await carregarFornecedores();
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.mensagem) {
+        alert(err.response.data.mensagem);
+      } else {
+        alert('Erro ao atualizar fornecedor.');
+      }
     }
   };
 
@@ -91,12 +103,12 @@ export default function FornecedoresPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Fornecedores</h1>
-          <p className="mt-1 text-base text-slate-600 dark:text-slate-300">Gestão dos parceiros e distribuidores do mercado</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Fornecedores</h1>
+          <p className="mt-1 text-base text-muted">Gestão dos parceiros e distribuidores do mercado</p>
         </div>
         <button
           onClick={() => setMostrarForm(!mostrarForm)}
-          className="flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
+          className="flex items-center justify-center gap-2 rounded-lg bg-info px-4 py-2.5 font-semibold text-foreground shadow-sm transition-colors hover:bg-info-hover"
         >
           <Plus className="w-4 h-4" />
           {mostrarForm ? 'Fechar Formulário' : 'Novo Fornecedor'}
@@ -104,68 +116,67 @@ export default function FornecedoresPage() {
       </div>
 
       {erro && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 font-medium text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
+        <div className="flex items-center gap-3 rounded-lg border border-danger/50 bg-danger/10 p-4 font-medium text-danger">
           <AlertCircle className="w-5 h-5" />
           {erro}
         </div>
       )}
 
       {mostrarForm && (
-        <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-700 border-b pb-2">Cadastrar Fornecedor</h2>
+        <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-border bg-background p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground border-b pb-2">Cadastrar Fornecedor</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">CNPJ</label>
+              <label className="block text-sm font-medium text-muted mb-1">CNPJ</label>
               <input
                 type="text"
                 required
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
                 placeholder="00.000.000/0001-00"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Razão Social</label>
+              <label className="block text-sm font-medium text-muted mb-1">Razão Social</label>
               <input
                 type="text"
                 required
                 value={razaoSocial}
                 onChange={(e) => setRazaoSocial(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
                 placeholder="Distribuidora de Alimentos S.A."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Nome Fantasia</label>
+              <label className="block text-sm font-medium text-muted mb-1">Nome Fantasia</label>
               <input
                 type="text"
                 value={nomeFantasia}
                 onChange={(e) => setNomeFantasia(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
                 placeholder="Alimentos Brasil"
               />
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium text-sm">
+            <button type="submit" className="bg-info hover:bg-info-hover text-foreground px-6 py-2 rounded-lg font-medium text-sm">
               Salvar
             </button>
           </div>
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-border bg-background">
         {carregando ? (
-          <div className="p-8 text-center text-slate-500">Carregando fornecedores...</div>
+          <div className="p-8 text-center text-muted">Carregando fornecedores...</div>
         ) : fornecedores.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
-            <Users className="w-10 h-10 text-slate-400" />
+          <div className="p-8 text-center text-muted flex flex-col items-center gap-2">
             Nenhum fornecedor cadastrado.
           </div>
         ) : (
-          <table className="w-full min-w-170 border-collapse text-left text-base">
-            <thead className="border-b border-slate-200 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <table className="w-full min-w-175 border-collapse text-left text-base">
+            <thead className="border-b border-border bg-surface text-xs font-bold uppercase tracking-wider text-foreground">
               <tr>
                 <th className="p-4">ID</th>
                 <th className="p-4">CNPJ</th>
@@ -174,18 +185,61 @@ export default function FornecedoresPage() {
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <tbody className="divide-y divide-border">
               {fornecedores.map((f) => (
-                <tr key={f.idFornecedor} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
-                  <td className="p-4 font-mono text-slate-500">#{f.idFornecedor}</td>
-                  <td className="p-4 font-mono text-slate-800">{f.cnpj}</td>
-                  <td className="p-4 text-slate-700 font-medium">{f.razaoSocial}</td>
-                  <td className="p-4 text-slate-600">{f.nomeFantasia || '-'}</td>
-                  <td className="p-4 text-right">
-                    <button onClick={() => handleExcluir(f.idFornecedor)} className="text-slate-400 hover:text-rose-600 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                <tr key={f.idFornecedor} className="transition-colors hover:bg-surface-hover">
+                  {editandoId === f.idFornecedor ? (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{f.idFornecedor}</td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editCnpj}
+                          onChange={(e) => setEditCnpj(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editRazaoSocial}
+                          onChange={(e) => setEditRazaoSocial(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <input
+                          type="text"
+                          value={editNomeFantasia}
+                          onChange={(e) => setEditNomeFantasia(e.target.value)}
+                          className="w-full border border-border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => salvarEdicao(f.idFornecedor!)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={cancelarEdicao} className="text-muted p-1">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="p-4 font-mono text-muted">#{f.idFornecedor}</td>
+                      <td className="p-4 font-mono text-foreground">{f.cnpj}</td>
+                      <td className="p-4 text-foreground font-medium">{f.razaoSocial}</td>
+                      <td className="p-4 text-muted">{f.nomeFantasia || '-'}</td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => iniciarEdicao(f)} className="text-muted hover:text-accent p-1 mr-1">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleExcluir(f.idFornecedor)} className="text-muted hover:text-danger p-1">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -195,3 +249,12 @@ export default function FornecedoresPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

@@ -1,27 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a; /* Texto bem escuro para o fundo claro */
-}
-
-/* Suporte à preferência do sistema */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ffffff; /* Texto 100% branco para contraste máximo */
-  }
-}
-
-/* Suporte para alternadores de tema via JS/classe .dark no <html> ou <body> */
-.dark {
-  --background: #0a0a0a;
+  --background: #0f172a;
   --foreground: #ffffff;
+  --surface: #1e293b;
+  --surface-hover: #334155;
+  --border: #334155;
+  --muted: #94a3b8;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --info: #3b82f6;
+  --info-hover: #2563eb;
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-info: var(--info);
+  --color-info-hover: var(--info-hover);
+  --color-warning: var(--warning);
+  --color-warning-hover: var(--warning-hover);
   --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 }
@@ -32,7 +42,6 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
-  /* Deixa a leitura mais nítida no navegador */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -46,7 +55,7 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #64748b;
+  color: var(--muted);
   opacity: 1;
 }
 
@@ -55,6 +64,6 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #34d399;
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }

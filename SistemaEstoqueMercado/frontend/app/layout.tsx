@@ -17,8 +17,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body 
-        className={`${inter.className} flex min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100`}
+      <body
+        className={`${inter.className} flex min-h-screen bg-background text-foreground`}
         suppressHydrationWarning
       >
         <Sidebar />
