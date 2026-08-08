@@ -1,8 +1,15 @@
 {
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.import.maven.enabled": true,
   "java.project.sourcePaths": [
-    "SistemaEstoqueMercado/src/main/java",
-    "SistemaEstoqueMercado/src/test/java"
+    "SistemaEstoqueMercado/backend/src/main/java",
+    "SistemaEstoqueMercado/backend/src/test/java"
   ],
-  "java.project.outputPath": "SistemaEstoqueMercado/target/classes",
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.project.outputPath": "SistemaEstoqueMercado/backend/target/classes",
+  "files.exclude": {
+    "**/target": true,
+    "**/.next": true,
+    "**/node_modules": true
+  }
 }
