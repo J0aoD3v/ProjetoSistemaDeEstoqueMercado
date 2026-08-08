@@ -9,4 +9,5 @@ public interface ProdutoRepository extends JpaRepository<Produto, Integer> {
     // Exemplo de busca personalizada sem SQL:
     Produto findBySku(String sku);
     Produto findByCodigoBarras(String codigoBarras);
+    long countByStatusAtivoTrue();
 }

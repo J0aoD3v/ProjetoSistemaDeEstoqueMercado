@@ -9,3 +9,4 @@ export type { Motorista } from './Motorista';
 export type { Veiculo } from './Veiculo';
 export type { Localizacao } from './Localizacao';
 export type { ItemRecebimento } from './ItemRecebimento';
+export type { DashboardData, AtividadeRecente } from './Dashboard';

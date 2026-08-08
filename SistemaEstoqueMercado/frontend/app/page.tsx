@@ -1,30 +1,90 @@
 'use client';
 
-import { 
-  Package, 
-  Truck, 
-  AlertTriangle, 
-  Users, 
-  Clock, 
+import { useState, useEffect } from 'react';
+import {
+  Package,
+  Truck,
+  AlertTriangle,
+  Users,
+  Clock,
   ArrowRight,
   TrendingUp,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
+import { dashboardService } from '@/services/dashboardService';
+import type { DashboardData } from '@/types';
 
 export default function Dashboard() {
-  const stats = [
-    { name: 'Produtos Ativos', value: '124', icon: Package, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { name: 'Recebimentos Hoje', value: '12', icon: Truck, color: 'text-warning', bg: 'bg-warning/10' },
-    { name: 'Divergências Abertas', value: '3', icon: AlertTriangle, color: 'text-danger', bg: 'bg-danger/10' },
-    { name: 'Fornecedores Ativos', value: '45', icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
-  ];
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [carregando, setCarregando] = useState(true);
 
-  const recentActivities = [
-    { id: 1, type: 'recebimento', title: 'Carga de Fornecedor ABC', time: 'Há 2 horas', status: 'Concluído', statusColor: 'text-accent' },
-    { id: 2, type: 'divergencia', title: 'Divergência no Item SKU-123', time: 'Há 5 horas', status: 'Em Análise', statusColor: 'text-warning' },
-    { id: 3, type: 'recebimento', title: 'Carga de Fornecedor XYZ', time: 'Há 1 dia', status: 'Agendado', statusColor: 'text-blue-500' },
-  ];
+  useEffect(() => {
+    async function carregarDados() {
+      try {
+        const resposta = await dashboardService.obterDados();
+        setData(resposta);
+      } catch (erro) {
+        console.error('Erro ao carregar dashboard:', erro);
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDados();
+  }, []);
+
+  const stats = data
+    ? [
+        {
+          name: 'Produtos Ativos',
+          value: String(data.totalProdutosAtivos),
+          icon: Package,
+          color: 'text-blue-500',
+          bg: 'bg-blue-500/10',
+        },
+        {
+          name: 'Recebimentos Hoje',
+          value: String(data.totalRecebimentosHoje),
+          icon: Truck,
+          color: 'text-warning',
+          bg: 'bg-warning/10',
+        },
+        {
+          name: 'Divergências Abertas',
+          value: String(data.totalDivergenciasAbertas),
+          icon: AlertTriangle,
+          color: 'text-danger',
+          bg: 'bg-danger/10',
+        },
+        {
+          name: 'Fornecedores Ativos',
+          value: String(data.totalFornecedoresAtivos),
+          icon: Users,
+          color: 'text-accent',
+          bg: 'bg-accent/10',
+        },
+      ]
+    : [];
+
+  const recentActivities = data
+    ? data.atividadesRecentes.map((atividade) => ({
+        id: atividade.id,
+        type: atividade.tipo,
+        title: atividade.titulo,
+        time: atividade.dataHora,
+        status: atividade.status,
+        statusColor: atividade.corStatus,
+      }))
+    : [];
+
+  if (carregando) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-muted">Carregando dados do dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
