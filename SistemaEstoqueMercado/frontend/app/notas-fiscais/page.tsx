@@ -183,7 +183,7 @@ export default function NotasFiscaisPage() {
   };
 
   const handleEditar = (nota: NotaFiscal) => {
-    setEditandoId(nota.idNotaFiscal);
+    setEditandoId(nota.idNotaFiscal ?? null);
     setEditNumeroNf(nota.numeroNf);
     setEditSerie(nota.serie);
     setEditDataEmissao(nota.dataEmissao);
