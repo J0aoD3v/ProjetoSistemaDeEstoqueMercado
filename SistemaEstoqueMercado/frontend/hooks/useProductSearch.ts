@@ -16,7 +16,7 @@ export function useProductSearch(options: UseProductSearchOptions = {}) {
   const [sugestoes, setSugestoes] = useState<Produto[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [aberto, setAberto] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const buscar = useCallback(async (valor: string) => {
     if (valor.length < minLength) {

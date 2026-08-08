@@ -20,7 +20,7 @@ export default function ItensRecebimentoPage() {
 
   const produtoSearch = useProductSearch({
     onSelect: (p) => {
-      setIdLote(p.idProduto ?? '');
+      setIdLote(String(p.idProduto ?? ''));
     },
   });
 
