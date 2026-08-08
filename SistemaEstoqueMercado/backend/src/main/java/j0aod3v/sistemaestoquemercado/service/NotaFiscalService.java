@@ -18,6 +18,10 @@ public class NotaFiscalService {
 
     public NotaFiscal cadastrar(NotaFiscal nota) {
         validar(nota);
+        NotaFiscal existente = notaFiscalRepository.findByChaveAcessoNfe(nota.getChaveAcessoNfe());
+        if (existente != null) {
+            throw new IllegalArgumentException("Chave de acesso já cadastrada: " + nota.getChaveAcessoNfe());
+        }
         return notaFiscalRepository.save(nota);
     }
 
@@ -34,6 +38,10 @@ public class NotaFiscalService {
     public NotaFiscal atualizar(NotaFiscal nota) {
         validar(nota);
         validarId(nota.getIdNotaFiscal());
+        NotaFiscal existente = notaFiscalRepository.findByChaveAcessoNfe(nota.getChaveAcessoNfe());
+        if (existente != null && !existente.getIdNotaFiscal().equals(nota.getIdNotaFiscal())) {
+            throw new IllegalArgumentException("Chave de acesso já cadastrada: " + nota.getChaveAcessoNfe());
+        }
         buscarPorId(nota.getIdNotaFiscal());
         return notaFiscalRepository.save(nota);
     }

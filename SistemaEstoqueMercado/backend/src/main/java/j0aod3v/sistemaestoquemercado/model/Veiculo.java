@@ -1,6 +1,8 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "veiculos")
@@ -10,14 +12,19 @@ public class Veiculo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idVeiculo;
 
+    @NotBlank
+    @Pattern(regexp = "[A-Z]{3}-[0-9]{4}|[A-Z]{3}[0-9][A-Z][0-9]{2}", message = "Placa deve estar no formato ABC-1234 ou ABC1D23")
     private String placa;
 
     @Column(name = "tipo_veiculo")
+    @NotBlank
     private String tipoVeiculo;
 
     @Column(name = "marca_modelo")
+    @NotBlank
     private String marcaModelo;
 
+    @NotBlank
     private String transportadora;
 
     public Veiculo() {}

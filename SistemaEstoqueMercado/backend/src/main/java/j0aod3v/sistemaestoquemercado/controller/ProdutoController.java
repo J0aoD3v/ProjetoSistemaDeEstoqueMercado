@@ -24,6 +24,18 @@ public class ProdutoController {
         return ResponseEntity.ok(produtoService.listarTodos());
     }
 
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Produto>> buscarPorTermo(@RequestParam String termo) {
+        List<Produto> todos = produtoService.listarTodos();
+        String termoLower = termo.toLowerCase();
+        List<Produto> filtrados = todos.stream()
+                .filter(p -> p.getSku() != null && p.getSku().toLowerCase().contains(termoLower)
+                        || p.getCodigoBarras() != null && p.getCodigoBarras().contains(termo)
+                        || p.getDescricao() != null && p.getDescricao().toLowerCase().contains(termoLower))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(filtrados);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Produto> buscarPorId(@PathVariable int id) {
         return ResponseEntity.ok(produtoService.buscarPorId(id));

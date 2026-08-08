@@ -17,6 +17,10 @@ public class FuncionarioService {
 
     public Funcionario cadastrar(Funcionario funcionario) {
         validar(funcionario);
+        Funcionario existente = funcionarioRepository.findByMatricula(funcionario.getMatricula());
+        if (existente != null) {
+            throw new IllegalArgumentException("Matrícula já cadastrada: " + funcionario.getMatricula());
+        }
         return funcionarioRepository.save(funcionario);
     }
 
@@ -33,6 +37,10 @@ public class FuncionarioService {
     public Funcionario atualizar(Funcionario funcionario) {
         validar(funcionario);
         validarId(funcionario.getIdFuncionario());
+        Funcionario existente = funcionarioRepository.findByMatricula(funcionario.getMatricula());
+        if (existente != null && !existente.getIdFuncionario().equals(funcionario.getIdFuncionario())) {
+            throw new IllegalArgumentException("Matrícula já cadastrada: " + funcionario.getMatricula());
+        }
         buscarPorId(funcionario.getIdFuncionario());
         return funcionarioRepository.save(funcionario);
     }

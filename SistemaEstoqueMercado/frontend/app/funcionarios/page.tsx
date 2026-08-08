@@ -5,6 +5,7 @@ import { Funcionario } from '@/types';
 import { funcionarioService } from '@/services/funcionarioService';
 import { Plus, Trash2, Edit, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
+import { formatMatricula } from '@/utils/masks';
 
 export default function FuncionariosPage() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
@@ -131,10 +132,11 @@ export default function FuncionariosPage() {
               <input
                 type="text"
                 required
-                value={matricula}
-                onChange={(e) => setMatricula(e.target.value)}
+                value={formatMatricula(matricula)}
+                onChange={(e) => setMatricula(formatMatricula(e.target.value))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
                 placeholder="FUNC-001"
+                maxLength={8}
               />
             </div>
             <div>

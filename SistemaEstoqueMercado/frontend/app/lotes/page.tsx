@@ -5,6 +5,7 @@ import { Lote } from '@/types';
 import { loteService } from '@/services/loteService';
 import { Plus, Trash2, Edit, Package, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
+import { useProductSearch } from '@/hooks/useProductSearch';
 
 export default function LotesPage() {
   const [lotes, setLotes] = useState<Lote[]>([]);
@@ -14,14 +15,21 @@ export default function LotesPage() {
   const [numeroLote, setNumeroLote] = useState('');
   const [dataFabricacao, setDataFabricacao] = useState('');
   const [dataValidade, setDataValidade] = useState('');
-  const [idProduto, setIdProduto] = useState<number | ''>('');
   const [mostrarForm, setMostrarForm] = useState(false);
 
   const [editNumeroLote, setEditNumeroLote] = useState('');
   const [editDataFabricacao, setEditDataFabricacao] = useState('');
   const [editDataValidade, setEditDataValidade] = useState('');
-  const [editIdProduto, setEditIdProduto] = useState<number | ''>('');
   const [editandoId, setEditandoId] = useState<number | null>(null);
+
+  const produtoSearch = useProductSearch({
+    onSelect: (p) => {
+      setIdProduto(p.idProduto ?? '');
+    },
+  });
+
+  const [idProduto, setIdProduto] = useState<number | ''>('');
+  const [editIdProduto, setEditIdProduto] = useState<number | ''>('');
 
   const carregarLotes = useCallback(async () => {
     try {
@@ -54,6 +62,7 @@ export default function LotesPage() {
       setDataFabricacao('');
       setDataValidade('');
       setIdProduto('');
+      produtoSearch.setTermo('');
       setMostrarForm(false);
       await carregarLotes();
     } catch (err) {
@@ -81,6 +90,7 @@ export default function LotesPage() {
     setEditDataFabricacao(l.dataFabricacao);
     setEditDataValidade(l.dataValidade);
     setEditIdProduto(l.idProduto);
+    produtoSearch.setTermo('');
   };
 
   const cancelarEdicao = () => {
@@ -89,6 +99,7 @@ export default function LotesPage() {
     setEditDataFabricacao('');
     setEditDataValidade('');
     setEditIdProduto('');
+    produtoSearch.setTermo('');
   };
 
   const salvarEdicao = async (id: number) => {
@@ -168,16 +179,35 @@ export default function LotesPage() {
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID do Produto</label>
+            <div className="relative">
+              <label className="block text-sm font-medium text-muted mb-1">Produto</label>
               <input
-                type="number"
+                type="text"
                 required
-                value={idProduto}
-                onChange={(e) => setIdProduto(e.target.value === '' ? '' : Number(e.target.value))}
+                value={produtoSearch.termo}
+                onChange={(e) => produtoSearch.setTermo(e.target.value)}
+                onBlur={() => setTimeout(produtoSearch.fechar, 150)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
-                placeholder="1"
+                placeholder="Buscar por SKU, código de barras ou descrição..."
               />
+              {produtoSearch.aberto && (
+                <ul className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
+                  {produtoSearch.carregando ? (
+                    <li className="p-3 text-sm text-muted">Carregando...</li>
+                  ) : (
+                    produtoSearch.sugestoes.map((p) => (
+                      <li
+                        key={p.idProduto}
+                        onMouseDown={() => produtoSearch.selecionar(p)}
+                        className="cursor-pointer px-3 py-2 text-sm hover:bg-surface-hover"
+                      >
+                        <span className="font-medium text-foreground">{p.sku}</span>
+                        <span className="text-muted"> - {p.descricao}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
             </div>
           </div>
           <div className="flex justify-end pt-2">

@@ -17,6 +17,10 @@ public class LocalizacaoService {
 
     public Localizacao cadastrar(Localizacao localizacao) {
         validar(localizacao);
+        Localizacao existente = localizacaoRepository.findByCodigoPosicao(localizacao.getCodigoPosicao());
+        if (existente != null) {
+            throw new IllegalArgumentException("Código da posição já cadastrado: " + localizacao.getCodigoPosicao());
+        }
         return localizacaoRepository.save(localizacao);
     }
 
@@ -33,6 +37,10 @@ public class LocalizacaoService {
     public Localizacao atualizar(Localizacao localizacao) {
         validar(localizacao);
         validarId(localizacao.getIdLocalizacao());
+        Localizacao existente = localizacaoRepository.findByCodigoPosicao(localizacao.getCodigoPosicao());
+        if (existente != null && !existente.getIdLocalizacao().equals(localizacao.getIdLocalizacao())) {
+            throw new IllegalArgumentException("Código da posição já cadastrado: " + localizacao.getCodigoPosicao());
+        }
         buscarPorId(localizacao.getIdLocalizacao());
         return localizacaoRepository.save(localizacao);
     }

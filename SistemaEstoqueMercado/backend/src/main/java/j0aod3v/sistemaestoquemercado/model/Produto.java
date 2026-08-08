@@ -1,6 +1,9 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "produtos")
@@ -10,17 +13,24 @@ public class Produto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idProduto;
 
+    @NotBlank
+    @Pattern(regexp = "[A-Z0-9\\-]+", message = "SKU deve conter apenas letras maiúsculas, números e hífen")
     private String sku;
-    
+
     @Column(name = "codigo_barras")
+    @NotBlank
+    @Pattern(regexp = "\\d{8,14}", message = "Código de barras deve conter entre 8 e 14 dígitos")
     private String codigoBarras;
 
+    @NotBlank
     private String descricao;
 
     @Column(name = "unidade_medida")
+    @NotBlank
     private String unidadeMedida;
 
     @Column(name = "status_ativo")
+    @NotNull
     private Boolean statusAtivo;
 
     public Produto() {}

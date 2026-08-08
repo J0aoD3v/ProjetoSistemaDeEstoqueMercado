@@ -5,6 +5,7 @@ import { Veiculo } from '@/types';
 import { veiculoService } from '@/services/veiculoService';
 import { Plus, Trash2, Truck, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { formatPlate } from '@/utils/masks';
 
 export default function VeiculosPage() {
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
@@ -120,10 +121,11 @@ export default function VeiculosPage() {
               <input
                 type="text"
                 required
-                value={placa}
-                onChange={(e) => setPlaca(e.target.value)}
+                value={formatPlate(placa)}
+                onChange={(e) => setPlaca(formatPlate(e.target.value))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning outline-none"
                 placeholder="ABC-1234"
+                maxLength={8}
               />
             </div>
             <div>

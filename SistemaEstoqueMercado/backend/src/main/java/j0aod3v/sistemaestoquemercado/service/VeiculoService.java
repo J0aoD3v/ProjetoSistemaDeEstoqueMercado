@@ -17,6 +17,10 @@ public class VeiculoService {
 
     public Veiculo cadastrar(Veiculo veiculo) {
         validar(veiculo);
+        Veiculo existente = veiculoRepository.findByPlaca(veiculo.getPlaca());
+        if (existente != null) {
+            throw new IllegalArgumentException("Placa já cadastrada: " + veiculo.getPlaca());
+        }
         return veiculoRepository.save(veiculo);
     }
 
@@ -33,6 +37,10 @@ public class VeiculoService {
     public Veiculo atualizar(Veiculo veiculo) {
         validar(veiculo);
         validarId(veiculo.getIdVeiculo());
+        Veiculo existente = veiculoRepository.findByPlaca(veiculo.getPlaca());
+        if (existente != null && !existente.getIdVeiculo().equals(veiculo.getIdVeiculo())) {
+            throw new IllegalArgumentException("Placa já cadastrada: " + veiculo.getPlaca());
+        }
         buscarPorId(veiculo.getIdVeiculo());
         return veiculoRepository.save(veiculo);
     }

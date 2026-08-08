@@ -1,6 +1,9 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 
 @Entity
@@ -12,15 +15,20 @@ public class Lote {
     private Integer idLote;
 
     @Column(name = "numero_lote")
+    @NotBlank
+    @Pattern(regexp = "[A-Z0-9\\-]+", message = "Número do lote deve conter apenas letras maiúsculas, números e hífen")
     private String numeroLote;
 
     @Column(name = "data_fabricacao")
+    @NotNull
     private LocalDate dataFabricacao;
 
     @Column(name = "data_validade")
+    @NotNull
     private LocalDate dataValidade;
 
     @Column(name = "id_produto")
+    @NotNull
     private Integer idProduto;
 
     public Lote() {}

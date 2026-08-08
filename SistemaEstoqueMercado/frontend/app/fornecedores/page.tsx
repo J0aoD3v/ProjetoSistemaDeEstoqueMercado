@@ -5,6 +5,7 @@ import { Fornecedor } from '@/types';
 import { fornecedorService } from '@/services/fornecedorService';
 import { Plus, Trash2, Edit, AlertCircle, X, Check } from 'lucide-react';
 import axios from 'axios';
+import { formatCNPJ } from '@/utils/masks';
 
 export default function FornecedoresPage() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -131,10 +132,11 @@ export default function FornecedoresPage() {
               <input
                 type="text"
                 required
-                value={cnpj}
-                onChange={(e) => setCnpj(e.target.value)}
+                value={formatCNPJ(cnpj)}
+                onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
                 placeholder="00.000.000/0001-00"
+                maxLength={18}
               />
             </div>
             <div>

@@ -1,6 +1,8 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "localizacoes")
@@ -11,9 +13,12 @@ public class Localizacao {
     private Integer idLocalizacao;
 
     @Column(name = "codigo_posicao")
+    @NotBlank
+    @Pattern(regexp = "[A-Z0-9]+-[0-9]{2}-[0-9]{2}", message = "Código da posição deve estar no formato A-01-02")
     private String codigoPosicao;
 
     @Column(name = "tipo_armazenamento")
+    @NotBlank
     private String tipoArmazenamento;
 
     public Localizacao() {}

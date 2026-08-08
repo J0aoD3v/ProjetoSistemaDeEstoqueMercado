@@ -1,6 +1,9 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -13,20 +16,27 @@ public class NotaFiscal {
     private Integer idNotaFiscal;
 
     @Column(name = "numero_nf")
+    @NotBlank
     private String numeroNf;
 
+    @NotBlank
     private String serie;
 
     @Column(name = "data_emissao")
+    @NotNull
     private LocalDate dataEmissao;
 
     @Column(name = "chave_acesso_nfe")
+    @NotBlank
+    @Pattern(regexp = "\\d{44}", message = "Chave de acesso deve conter 44 dígitos")
     private String chaveAcessoNfe;
 
     @Column(name = "valor_total")
+    @NotNull
     private BigDecimal valorTotal;
 
     @Column(name = "id_fornecedor")
+    @NotNull
     private Integer idFornecedor;
 
     public NotaFiscal() {}

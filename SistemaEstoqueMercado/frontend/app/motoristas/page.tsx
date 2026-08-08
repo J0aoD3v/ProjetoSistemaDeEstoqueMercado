@@ -5,6 +5,7 @@ import { Motorista } from '@/types';
 import { motoristaService } from '@/services/motoristaService';
 import { Plus, Trash2, User, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { formatCPF } from '@/utils/masks';
 
 export default function MotoristasPage() {
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
@@ -118,10 +119,11 @@ export default function MotoristasPage() {
               <input
                 type="text"
                 required
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
+                value={formatCPF(cpf)}
+                onChange={(e) => setCpf(formatCPF(e.target.value))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                 placeholder="000.000.000-00"
+                maxLength={14}
               />
             </div>
             <div>

@@ -17,6 +17,10 @@ public class FornecedorService {
 
     public Fornecedor cadastrar(Fornecedor fornecedor) {
         validar(fornecedor);
+        Fornecedor existente = fornecedorRepository.findByCnpj(fornecedor.getCnpj());
+        if (existente != null) {
+            throw new IllegalArgumentException("CNPJ já cadastrado: " + fornecedor.getCnpj());
+        }
         return fornecedorRepository.save(fornecedor);
     }
 
@@ -33,6 +37,10 @@ public class FornecedorService {
     public Fornecedor atualizar(Fornecedor fornecedor) {
         validar(fornecedor);
         validarId(fornecedor.getIdFornecedor());
+        Fornecedor existente = fornecedorRepository.findByCnpj(fornecedor.getCnpj());
+        if (existente != null && !existente.getIdFornecedor().equals(fornecedor.getIdFornecedor())) {
+            throw new IllegalArgumentException("CNPJ já cadastrado: " + fornecedor.getCnpj());
+        }
         buscarPorId(fornecedor.getIdFornecedor());
         return fornecedorRepository.save(fornecedor);
     }

@@ -1,6 +1,8 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "funcionarios")
@@ -10,8 +12,14 @@ public class Funcionario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idFuncionario;
 
+    @NotBlank
+    @Pattern(regexp = "FUNC-[0-9]{3}", message = "Matrícula deve estar no formato FUNC-001")
     private String matricula;
+
+    @NotBlank
     private String nome;
+
+    @NotBlank
     private String cargo;
 
     public Funcionario() {}

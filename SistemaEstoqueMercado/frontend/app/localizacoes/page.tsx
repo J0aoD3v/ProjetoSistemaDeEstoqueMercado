@@ -5,6 +5,7 @@ import { Localizacao } from '@/types';
 import { localizacaoService } from '@/services/localizacaoService';
 import { Plus, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { formatCodigoPosicao } from '@/utils/masks';
 
 export default function LocalizacoesPage() {
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
@@ -116,10 +117,11 @@ export default function LocalizacoesPage() {
               <input
                 type="text"
                 required
-                value={codigoPosicao}
-                onChange={(e) => setCodigoPosicao(e.target.value)}
+                value={formatCodigoPosicao(codigoPosicao)}
+                onChange={(e) => setCodigoPosicao(formatCodigoPosicao(e.target.value))}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent outline-none"
                 placeholder="A-01-02"
+                maxLength={8}
               />
             </div>
             <div>

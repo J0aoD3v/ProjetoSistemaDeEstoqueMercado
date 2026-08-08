@@ -17,6 +17,14 @@ public class ProdutoService {
 
     public Produto cadastrar(Produto produto) {
         validar(produto);
+        Produto existenteSku = produtoRepository.findBySku(produto.getSku());
+        if (existenteSku != null) {
+            throw new IllegalArgumentException("SKU já cadastrado: " + produto.getSku());
+        }
+        Produto existenteCodigo = produtoRepository.findByCodigoBarras(produto.getCodigoBarras());
+        if (existenteCodigo != null) {
+            throw new IllegalArgumentException("Código de barras já cadastrado: " + produto.getCodigoBarras());
+        }
         return produtoRepository.save(produto);
     }
 
@@ -33,6 +41,14 @@ public class ProdutoService {
     public Produto atualizar(Produto produto) {
         validar(produto);
         validarId(produto.getIdProduto());
+        Produto existenteSku = produtoRepository.findBySku(produto.getSku());
+        if (existenteSku != null && !existenteSku.getIdProduto().equals(produto.getIdProduto())) {
+            throw new IllegalArgumentException("SKU já cadastrado: " + produto.getSku());
+        }
+        Produto existenteCodigo = produtoRepository.findByCodigoBarras(produto.getCodigoBarras());
+        if (existenteCodigo != null && !existenteCodigo.getIdProduto().equals(produto.getIdProduto())) {
+            throw new IllegalArgumentException("Código de barras já cadastrado: " + produto.getCodigoBarras());
+        }
         buscarPorId(produto.getIdProduto());
         return produtoRepository.save(produto);
     }

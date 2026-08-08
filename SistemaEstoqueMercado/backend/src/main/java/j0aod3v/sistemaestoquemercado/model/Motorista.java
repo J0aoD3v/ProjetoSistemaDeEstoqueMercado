@@ -1,6 +1,8 @@
 package j0aod3v.sistemaestoquemercado.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "motoristas")
@@ -10,8 +12,14 @@ public class Motorista {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idMotorista;
 
+    @NotBlank
+    @Pattern(regexp = "\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}", message = "CPF deve estar no formato 000.000.000-00")
     private String cpf;
+
+    @NotBlank
     private String nome;
+
+    @NotBlank
     private String cnh;
 
     public Motorista() {}

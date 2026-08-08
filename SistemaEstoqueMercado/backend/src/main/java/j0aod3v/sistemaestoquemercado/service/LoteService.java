@@ -17,6 +17,10 @@ public class LoteService {
 
     public Lote cadastrar(Lote lote) {
         validar(lote);
+        Lote existente = loteRepository.findByNumeroLote(lote.getNumeroLote());
+        if (existente != null) {
+            throw new IllegalArgumentException("Número do lote já cadastrado: " + lote.getNumeroLote());
+        }
         return loteRepository.save(lote);
     }
 
@@ -38,6 +42,10 @@ public class LoteService {
     public Lote atualizar(Lote lote) {
         validar(lote);
         validarId(lote.getIdLote());
+        Lote existente = loteRepository.findByNumeroLote(lote.getNumeroLote());
+        if (existente != null && !existente.getIdLote().equals(lote.getIdLote())) {
+            throw new IllegalArgumentException("Número do lote já cadastrado: " + lote.getNumeroLote());
+        }
         buscarPorId(lote.getIdLote());
         return loteRepository.save(lote);
     }

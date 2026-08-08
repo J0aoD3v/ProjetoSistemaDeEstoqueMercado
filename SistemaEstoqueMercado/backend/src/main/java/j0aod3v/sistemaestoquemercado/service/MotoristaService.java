@@ -17,6 +17,10 @@ public class MotoristaService {
 
     public Motorista cadastrar(Motorista motorista) {
         validar(motorista);
+        Motorista existente = motoristaRepository.findByCpf(motorista.getCpf());
+        if (existente != null) {
+            throw new IllegalArgumentException("CPF já cadastrado: " + motorista.getCpf());
+        }
         return motoristaRepository.save(motorista);
     }
 
@@ -33,6 +37,10 @@ public class MotoristaService {
     public Motorista atualizar(Motorista motorista) {
         validar(motorista);
         validarId(motorista.getIdMotorista());
+        Motorista existente = motoristaRepository.findByCpf(motorista.getCpf());
+        if (existente != null && !existente.getIdMotorista().equals(motorista.getIdMotorista())) {
+            throw new IllegalArgumentException("CPF já cadastrado: " + motorista.getCpf());
+        }
         buscarPorId(motorista.getIdMotorista());
         return motoristaRepository.save(motorista);
     }

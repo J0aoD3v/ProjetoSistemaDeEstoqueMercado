@@ -5,6 +5,7 @@ import { ItemRecebimento } from '@/types';
 import { itemRecebimentoService } from '@/services/itemRecebimentoService';
 import { Plus, Trash2, Calculator, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { useProductSearch } from '@/hooks/useProductSearch';
 
 export default function ItensRecebimentoPage() {
   const [itens, setItens] = useState<ItemRecebimento[]>([]);
@@ -14,9 +15,16 @@ export default function ItensRecebimentoPage() {
   const [quantidadeDeclarada, setQuantidadeDeclarada] = useState('');
   const [quantidadeConferida, setQuantidadeConferida] = useState('');
   const [idRecebimento, setIdRecebimento] = useState('');
-  const [idLote, setIdLote] = useState('');
   const [idLocalizacao, setIdLocalizacao] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+
+  const produtoSearch = useProductSearch({
+    onSelect: (p) => {
+      setIdLote(p.idProduto ?? '');
+    },
+  });
+
+  const [idLote, setIdLote] = useState('');
 
   const buscarItens = async () => {
     try {
@@ -73,6 +81,7 @@ export default function ItensRecebimentoPage() {
       setIdRecebimento('');
       setIdLote('');
       setIdLocalizacao('');
+      produtoSearch.setTermo('');
       setMostrarForm(false);
       setCarregando(true);
       await buscarItens();
@@ -177,16 +186,35 @@ export default function ItensRecebimentoPage() {
                 placeholder="1"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-muted mb-1">ID Lote</label>
+            <div className="relative">
+              <label className="block text-sm font-medium text-muted mb-1">Produto / Lote</label>
               <input
-                type="number"
+                type="text"
                 required
-                value={idLote}
-                onChange={(e) => setIdLote(e.target.value)}
+                value={produtoSearch.termo}
+                onChange={(e) => produtoSearch.setTermo(e.target.value)}
+                onBlur={() => setTimeout(produtoSearch.fechar, 150)}
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-info outline-none"
-                placeholder="1"
+                placeholder="Buscar produto por SKU, código ou descrição..."
               />
+              {produtoSearch.aberto && (
+                <ul className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
+                  {produtoSearch.carregando ? (
+                    <li className="p-3 text-sm text-muted">Carregando...</li>
+                  ) : (
+                    produtoSearch.sugestoes.map((p) => (
+                      <li
+                        key={p.idProduto}
+                        onMouseDown={() => produtoSearch.selecionar(p)}
+                        className="cursor-pointer px-3 py-2 text-sm hover:bg-surface-hover"
+                      >
+                        <span className="font-medium text-foreground">{p.sku}</span>
+                        <span className="text-muted"> - {p.descricao}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-1">ID Localização</label>
