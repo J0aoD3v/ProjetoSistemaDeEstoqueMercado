@@ -6,7 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 @Entity
-@Table(name = "produtos")
+@Table(name = "produtos", indexes = {
+        @Index(name = "idx_produtos_status_ativo", columnList = "status_ativo")
+})
 public class Produto {
 
     @Id
