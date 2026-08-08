@@ -103,18 +103,18 @@ export default function ProdutosPage() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho principal com cores ajustadas para Dark Mode */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Cadastro de Produtos
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-base text-slate-600 dark:text-slate-300">
             Gerencie os itens do catálogo do mercado
           </p>
         </div>
         <button
           onClick={() => setMostrarForm(!mostrarForm)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-emerald-800"
         >
           <Plus className="w-4 h-4" />
           {mostrarForm ? 'Fechar Formulário' : 'Novo Produto'}
@@ -132,7 +132,7 @@ export default function ProdutosPage() {
       {mostrarForm && (
         <form 
           onSubmit={handleCadastrar} 
-          className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm space-y-4 border border-slate-200 dark:border-slate-800 transition-colors"
+        className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900"
         >
           <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-800 pb-2">
             Novo Produto
@@ -217,7 +217,7 @@ export default function ProdutosPage() {
       )}
 
       {/* Tabela de Produtos com Dark Mode completo */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden transition-colors">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-700 dark:bg-slate-900">
         {carregando ? (
           <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             Carregando catálogo de produtos...
@@ -228,8 +228,8 @@ export default function ProdutosPage() {
             Nenhum produto cadastrado no momento.
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <table className="w-full min-w-[760px] border-collapse text-left text-base">
+            <thead className="border-b border-slate-200 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <tr>
                 <th className="p-4">ID</th>
                 <th className="p-4">SKU</th>
@@ -240,9 +240,9 @@ export default function ProdutosPage() {
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+            <tbody className="divide-y divide-slate-200 text-sm dark:divide-slate-700">
               {produtos.map((p) => (
-                <tr key={p.idProduto} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr key={p.idProduto} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
                   <td className="p-4 font-mono text-slate-500 dark:text-slate-400">
                     #{p.idProduto}
                   </td>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Truck, FileText, AlertTriangle, Users, Home } from 'lucide-react';
+import { Package, Truck, AlertTriangle, Users, Home } from 'lucide-react';
 
 const menuItems = [
   { name: 'Dashboard', href: '/', icon: Home },
