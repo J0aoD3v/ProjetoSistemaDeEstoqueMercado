@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Truck, AlertTriangle, Users, Home } from 'lucide-react';
+import { Package, Truck, AlertTriangle, Users, Home, User, PackageOpen } from 'lucide-react';
 
 const menuItems = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Produtos', href: '/produtos', icon: Package },
   { name: 'Fornecedores', href: '/fornecedores', icon: Users },
+  { name: 'Funcionários', href: '/funcionarios', icon: User },
+  { name: 'Lotes', href: '/lotes', icon: PackageOpen },
   { name: 'Recebimentos', href: '/recebimentos', icon: Truck },
   { name: 'Divergências', href: '/divergencias', icon: AlertTriangle },
 ];

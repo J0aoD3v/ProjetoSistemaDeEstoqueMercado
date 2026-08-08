@@ -61,7 +61,7 @@ export default function RecebimentosPage() {
             Nenhum recebimento registrado no momento.
           </div>
         ) : (
-          <table className="w-full min-w-[680px] border-collapse text-left text-base">
+          <table className="w-full min-w-170 border-collapse text-left text-base">
             <thead className="border-b border-slate-200 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <tr>
                 <th className="p-4">ID</th>

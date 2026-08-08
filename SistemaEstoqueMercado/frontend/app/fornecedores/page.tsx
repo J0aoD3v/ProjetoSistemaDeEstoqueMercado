@@ -112,43 +112,43 @@ export default function FornecedoresPage() {
 
       {mostrarForm && (
         <form onSubmit={handleCadastrar} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 border-b pb-2 dark:border-slate-800">Cadastrar Fornecedor</h2>
+          <h2 className="text-lg font-semibold text-slate-700 border-b pb-2">Cadastrar Fornecedor</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">CNPJ</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">CNPJ</label>
               <input
                 type="text"
                 required
                 value={cnpj}
                 onChange={(e) => setCnpj(e.target.value)}
-                className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="00.000.000/0001-00"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Razão Social</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Razão Social</label>
               <input
                 type="text"
                 required
                 value={razaoSocial}
                 onChange={(e) => setRazaoSocial(e.target.value)}
-                className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Distribuidora de Alimentos S.A."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Nome Fantasia</label>
+              <label className="block text-sm font-medium text-slate-600 mb-1">Nome Fantasia</label>
               <input
                 type="text"
                 value={nomeFantasia}
                 onChange={(e) => setNomeFantasia(e.target.value)}
-                className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Alimentos Brasil"
               />
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors">
+            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium text-sm">
               Salvar
             </button>
           </div>
@@ -157,14 +157,14 @@ export default function FornecedoresPage() {
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         {carregando ? (
-          <div className="p-8 text-center text-slate-500 dark:text-slate-400">Carregando fornecedores...</div>
+          <div className="p-8 text-center text-slate-500">Carregando fornecedores...</div>
         ) : fornecedores.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-2 dark:text-slate-400">
-            <Users className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+          <div className="p-8 text-center text-slate-500 flex flex-col items-center gap-2">
+            <Users className="w-10 h-10 text-slate-400" />
             Nenhum fornecedor cadastrado.
           </div>
         ) : (
-          <table className="w-full min-w-[680px] border-collapse text-left text-base">
+          <table className="w-full min-w-170 border-collapse text-left text-base">
             <thead className="border-b border-slate-200 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <tr>
                 <th className="p-4">ID</th>
@@ -177,12 +177,12 @@ export default function FornecedoresPage() {
             <tbody className="divide-y divide-slate-200 text-sm dark:divide-slate-700">
               {fornecedores.map((f) => (
                 <tr key={f.idFornecedor} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
-                  <td className="p-4 font-mono text-slate-500 dark:text-slate-400">#{f.idFornecedor}</td>
-                  <td className="p-4 font-mono text-slate-800 dark:text-slate-100">{f.cnpj}</td>
-                  <td className="p-4 text-slate-700 dark:text-slate-200 font-medium">{f.razaoSocial}</td>
-                  <td className="p-4 text-slate-600 dark:text-slate-300">{f.nomeFantasia || '-'}</td>
+                  <td className="p-4 font-mono text-slate-500">#{f.idFornecedor}</td>
+                  <td className="p-4 font-mono text-slate-800">{f.cnpj}</td>
+                  <td className="p-4 text-slate-700 font-medium">{f.razaoSocial}</td>
+                  <td className="p-4 text-slate-600">{f.nomeFantasia || '-'}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => handleExcluir(f.idFornecedor)} className="text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 p-1 transition-colors">
+                    <button onClick={() => handleExcluir(f.idFornecedor)} className="text-slate-400 hover:text-rose-600 p-1">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
