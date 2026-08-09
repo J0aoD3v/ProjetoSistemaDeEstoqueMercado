@@ -78,14 +78,6 @@ export default function Dashboard() {
       }))
     : [];
 
-  if (carregando) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <p className="text-muted">Carregando dados do dashboard...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <div>
@@ -93,8 +85,12 @@ export default function Dashboard() {
         <p className="mt-1 text-base text-muted">Bem-vindo ao Sistema de Gestão de Estoque e Recebimento.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {carregando ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.name} className="relative overflow-hidden rounded-xl border border-border bg-background p-6 shadow-sm">
             <div className="flex items-center gap-4">
@@ -209,6 +205,73 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="relative overflow-hidden rounded-xl border border-border bg-background p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="skeleton h-12 w-12 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <div className="skeleton h-4 w-24" />
+                <div className="skeleton h-8 w-16" />
+              </div>
+            </div>
+            <div className="skeleton mt-4 h-3 w-40" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2" aria-hidden="true">
+        <div className="rounded-xl border border-border bg-background shadow-sm">
+          <div className="flex items-center justify-between border-b border-border p-6">
+            <div className="skeleton h-5 w-44" />
+            <div className="skeleton h-5 w-5 rounded-md" />
+          </div>
+          <div className="p-6">
+            <ul className="-my-5 divide-y divide-border">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="py-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="skeleton h-10 w-10 shrink-0 rounded-full" />
+                      <div className="space-y-2">
+                        <div className="skeleton h-4 w-56 max-w-[60vw]" />
+                        <div className="skeleton h-3 w-40" />
+                      </div>
+                    </div>
+                    <div className="skeleton h-5 w-24 shrink-0" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6">
+              <div className="skeleton h-10 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background shadow-sm">
+          <div className="border-b border-border p-6">
+            <div className="skeleton h-5 w-32" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 p-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-3 rounded-xl border border-border p-6 text-center">
+                <div className="skeleton h-14 w-14 rounded-full" />
+                <div className="skeleton h-4 w-28" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
