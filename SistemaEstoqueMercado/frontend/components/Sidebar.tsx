@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   Package,
@@ -18,7 +18,10 @@ import {
   Database,
   Menu,
   X,
+  LogOut,
 } from 'lucide-react';
+import { definirAutenticacao } from '@/components/AuthGuard';
+import api, { CHAVE_TOKEN } from '@/services/api';
 
 const menuItems = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -38,8 +41,20 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [ultimoPathname, setUltimoPathname] = useState(pathname);
+
+  const sair = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+    } finally {
+      localStorage.removeItem(CHAVE_TOKEN);
+      definirAutenticacao(false);
+      router.replace('/login');
+    }
+  };
 
   if (ultimoPathname !== pathname) {
     setUltimoPathname(pathname);
@@ -58,6 +73,10 @@ export default function Sidebar() {
       document.body.classList.remove('overflow-hidden');
     };
   }, [aberto]);
+
+  if (pathname === '/login') {
+    return null;
+  }
 
   const renderNav = (onSelecionar?: () => void) =>
     menuItems.map((item) => {
@@ -120,6 +139,15 @@ export default function Sidebar() {
             <nav className="flex-1 space-y-1 overflow-y-auto p-4">
               {renderNav(() => setAberto(false))}
             </nav>
+            <div className="border-t border-border p-4">
+              <button
+                onClick={sair}
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+              >
+                <LogOut className="w-5 h-5" />
+                Sair
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -130,6 +158,15 @@ export default function Sidebar() {
           Estoque Mercado
         </div>
         <nav className="flex-1 space-y-1">{renderNav()}</nav>
+        <div className="border-t border-border pt-4">
+          <button
+            onClick={sair}
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <LogOut className="w-5 h-5" />
+            Sair
+          </button>
+        </div>
       </aside>
     </>
   );

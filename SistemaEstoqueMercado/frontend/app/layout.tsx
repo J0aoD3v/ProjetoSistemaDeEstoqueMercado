@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
+import AuthGuard from '@/components/AuthGuard';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,8 +22,10 @@ export default function RootLayout({
         className={`${inter.className} flex min-h-screen flex-col bg-background text-foreground lg:flex-row`}
         suppressHydrationWarning
       >
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <AuthGuard>
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        </AuthGuard>
       </body>
     </html>
   );
