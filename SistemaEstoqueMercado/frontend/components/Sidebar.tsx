@@ -15,6 +15,7 @@ import {
   Car,
   MapPin,
   ClipboardList,
+  Database,
   Menu,
   X,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ const menuItems = [
   { name: 'Veículos', href: '/veiculos', icon: Car },
   { name: 'Localizações', href: '/localizacoes', icon: MapPin },
   { name: 'Divergências', href: '/divergencias', icon: AlertTriangle },
+  { name: 'Importar / Exportar', href: '/dados', icon: Database },
 ];
 
 export default function Sidebar() {

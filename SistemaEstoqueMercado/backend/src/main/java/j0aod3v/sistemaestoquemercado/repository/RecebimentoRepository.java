@@ -11,5 +11,6 @@ import java.util.List;
 public interface RecebimentoRepository extends JpaRepository<Recebimento, Integer> {
     List<Recebimento> findByStatusRecebimento(String statusRecebimento);
     List<Recebimento> findTop5ByOrderByDataHoraChegadaDesc();
+    List<Recebimento> findByIdNotaFiscal(Integer idNotaFiscal);
     long countByDataHoraChegadaBetween(LocalDateTime inicio, LocalDateTime fim);
 }

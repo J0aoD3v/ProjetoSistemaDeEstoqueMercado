@@ -10,3 +10,11 @@ export type { Veiculo } from './Veiculo';
 export type { Localizacao } from './Localizacao';
 export type { ItemRecebimento } from './ItemRecebimento';
 export type { DashboardData, AtividadeRecente } from './Dashboard';
+export type {
+  ColunaMeta,
+  EntidadeMeta,
+  ErroLinha,
+  ValidacaoImportacao,
+  ResultadoImportacao,
+  ResumoExportacao,
+} from './Dados';
