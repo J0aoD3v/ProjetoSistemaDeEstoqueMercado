@@ -15,6 +15,7 @@
   --info-hover: #2563eb;
   --warning: #f59e0b;
   --warning-hover: #d97706;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -51,6 +52,30 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/* --- Dropdowns nativos (<select> / <option>) --- */
+/* Garante contraste no controle fechado e no popup nativo do navegador,
+   em qualquer tema, independentemente do `color-scheme` do sistema. */
+select {
+  color: var(--foreground);
+  background-color: var(--surface);
+}
+
+option {
+  color: var(--foreground);
+  background-color: var(--surface);
+}
+
+option:hover,
+option:focus {
+  background-color: var(--surface-hover);
+  color: var(--foreground);
+}
+
+option:checked {
+  background-color: var(--surface-hover);
+  color: var(--foreground);
 }
 
 input::placeholder,
