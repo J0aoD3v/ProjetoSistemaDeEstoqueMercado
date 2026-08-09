@@ -95,3 +95,25 @@ textarea:focus-visible {
     animation: none;
   }
 }
+
+/* --- Ajustes mobile / touch --- */
+/* Alvos de toque confortáveis em dispositivos touch (tablets/celulares) */
+@media (pointer: coarse) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 2.5rem;
+  }
+}
+
+/* Compacta o preenchimento horizontal das células de tabela em telas pequenas,
+   reduzindo a largura mínima e a rolagem horizontal desnecessária */
+@media (max-width: 640px) {
+  th,
+  td {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}

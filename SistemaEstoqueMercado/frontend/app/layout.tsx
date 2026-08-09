@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${inter.className} flex min-h-screen bg-background text-foreground`}
+        className={`${inter.className} flex min-h-screen flex-col bg-background text-foreground lg:flex-row`}
         suppressHydrationWarning
       >
         <Sidebar />
